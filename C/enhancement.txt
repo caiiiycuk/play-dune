@@ -1,0 +1,100 @@
+Enhancement over Dune2
+======================
+When OpenDUNE is started in enhanced mode (default), a lot of bugs and
+ problems which are in the original Dune2 version, are fixed.
+
+Below is the complete listing of all those bugs and problems, per category.
+ Every entry describes the problem, where the solution is in all cases
+ obvious by the way the problem is described and therefore the solution is
+ not mentioned as such.
+
+
+Structure
+---------
+- When building a Wall, the owner-bits are not cleared correctly, which in
+    theory could mean a Wall build by you could show up as owned by Sadukar.
+- When building a structure completely on slabs, it still degrades. This seems
+    in contrast with the idea of slabs.
+- When building a structure, only the fog is removed (with a radius of 2) from
+    the first tile defined in the layout of the structure. This is mostly
+    noticable with Palace and Oil Refinery, leaving parts of them in the fog.
+- Windtraps that have less than 50% hp still produce 50% of the power, even so
+    the GUI tells you differently. Of course the GUI makes more sense in this
+    case.
+- Repair cost calculation is unfair. Dune2 uses a 256 float-resolution,
+    meaning that you get rounding errors very fast. In result, Palace costs
+    nothing to repair, and a windtrap costs 2 credits instead of 3 credits per
+    repair tick. In detail: (2 * 256 / hitpoints) * credits / 256. The first
+    part causes rounding errors.
+- If one structure gives a script error, all structures after it in the linked
+    list are not handled. This doesn't really seem correct.
+- In Script function which finds the closest unit to target, it doesn't pick
+    the closest unit within range, but the one with the highest index within
+    range.
+- Too many tile colours are remapped with house colours, causing graphical
+    issues with the IX building. It maps 0x90 .. 0xA0 instead of 0x90 .. 0x96.
+- When taking over a building (by having an infantry walk in it while the
+    structure is on low hitpoints), your own units keep firing at it, and will
+    most likely destroy it.
+- When you attack the structure of the AI, the idea is that they massively
+    start to attack you (payback and stuff). To do this, Dune2 searches all
+    Units with type 0 (Carry-alls), instead of type 0xFFFF (all units).
+    WARNING: this glitch makes the game much easier in its original form.
+- A structure in production also counts towards your storable spice,
+    producing power, and/or requiring power. It does not check if the structure
+    is in fact placed on the map.
+
+
+Unit
+----
+- Once a Unit enters a tile on which it starts to wobble, it will never stop
+    wobbling, even if it enters a tile where it shouldn't wobble.
+
+
+Scenario
+--------
+- A mistake in reading the '+' causes repeat for reinforcements to be always
+    false. In result reinforcement is only send once.
+- The structure '% hitpoints' is ignored. In result all structures always
+    have 100% hitpoints.
+
+
+House
+-----
+- When you have a refinery and lost all your harvesters, you get a new one even
+    if you are currently building one in heavy vehicle factory.
+- Silo credit capping is done outside the main house loop, causing it to only
+    update the house which owns the latest structure. This allows you to go
+    over your silo capacity most of the time, and then losing it all of a
+    sudden (when you start building a structure).
+
+
+Teams
+-----
+- If a team gives a script error, all other teams are aborted.
+
+
+SaveLoad
+--------
+- The save routine allowed a NAME chunk up to 65536 bytes, where 255 bytes
+    should be sufficient for any sane name (both excluding the \0).
+
+
+General
+-------
+- The screen telling if you have the security question wrong/right is there
+    for such short time, you never really see it.
+- When loading a game, the fadein is barely visible because it is against the
+    screen how it will turn out, minus the selection of an active building.
+
+
+Map
+---
+- When a unit moves over the top of a mound, you never get abandoned vehicles
+    nor hiding enemy units
+- When getting free Trikes on the map, you never got ownership of them. The
+    parameter order is switched, where the type of the unit becomes the number
+    of the house, and the house becomes the value of Trike (13). This also
+    means that these vehicles read/write outside the house struct, which in
+    terms results in random artifects.
+
