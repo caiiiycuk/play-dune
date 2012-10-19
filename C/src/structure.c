@@ -34,6 +34,18 @@
 #include "tools.h"
 #include "unit.h"
 
+/*--*/
+void ca_FillStructureFromFactoryResult(FactoryResult res);
+bool ca_StructureFinalize(Structure *s, uint16 objectType);
+
+typedef struct AsyncSelectStrucutreData {
+	Structure *strucutre;
+	uint16 objectType;
+}  AsyncSelectStrucutreData;
+
+static AsyncSelectStrucutreData asyncSelectStrucutreData;
+/*--*/
+
 
 Structure *g_structureActive = NULL;
 uint16 g_structureActivePosition = 0;
@@ -1431,26 +1443,20 @@ static void Structure_CancelBuild(Structure *s)
  * @param objectType The type of the object to build or a special value (0xFFFD, 0xFFFE, 0xFFFF).
  * @return ??.
  */
-bool Structure_BuildObject(Structure *s, uint16 objectType)
+bool Structure_BuildObject(Structure *strucutre, uint16 objectType)
 {
 	const StructureInfo *si;
-	House *h;
-	char *str;
-	Object *o;
-	ObjectInfo *oi;
 
-	if (s == NULL) return false;
+	if (strucutre == NULL) return false;
 
-	si = &g_table_structureInfo[s->o.type];
+	si = &g_table_structureInfo[strucutre->o.type];
 
 	if (!si->o.flags.factory) return false;
 
-	h = House_Get_ByIndex(s->o.houseID);
-
-	Structure_SetRepairingState(s, 0, NULL);
+	Structure_SetRepairingState(strucutre, 0, NULL);
 
 	if (objectType == 0xFFFD) {
-		Structure_SetUpgradingState(s, 1, NULL);
+		Structure_SetUpgradingState(strucutre, 1, NULL);
 		return false;
 	}
 
@@ -1458,21 +1464,21 @@ bool Structure_BuildObject(Structure *s, uint16 objectType)
 		uint16 upgradeCost = 0;
 		uint32 buildable;
 
-		if (Structure_IsUpgradable(s) && si->o.hitpoints == s->o.hitpoints) {
+		if (Structure_IsUpgradable(strucutre) && si->o.hitpoints == strucutre->o.hitpoints) {
 			upgradeCost = (si->o.buildCredits + (si->o.buildCredits >> 15)) / 2;
 		}
 
-		if (upgradeCost != 0 && s->o.type == STRUCTURE_HIGH_TECH && s->o.houseID == HOUSE_HARKONNEN) upgradeCost = 0;
-		if (s->o.type == STRUCTURE_STARPORT) upgradeCost = 0;
+		if (upgradeCost != 0 && strucutre->o.type == STRUCTURE_HIGH_TECH && strucutre->o.houseID == HOUSE_HARKONNEN) upgradeCost = 0;
+		if (strucutre->o.type == STRUCTURE_STARPORT) upgradeCost = 0;
 
-		buildable = Structure_GetBuildable(s);
+		buildable = Structure_GetBuildable(strucutre);
 
 		if (buildable == 0) {
-			s->objectType = 0;
+			strucutre->objectType = 0;
 			return false;
 		}
 
-		if (s->o.type == STRUCTURE_CONSTRUCTION_YARD) {
+		if (strucutre->o.type == STRUCTURE_CONSTRUCTION_YARD) {
 			uint8 i;
 
 			g_factoryWindowConstructionYard = true;
@@ -1481,13 +1487,13 @@ bool Structure_BuildObject(Structure *s, uint16 objectType)
 				if ((buildable & (1 << i)) == 0) continue;
 				g_table_structureInfo[i].o.available = 1;
 				if (objectType != 0xFFFE) continue;
-				s->objectType = i;
+				strucutre->objectType = i;
 				return false;
 			}
 		} else {
 			g_factoryWindowConstructionYard = false;
 
-			if (s->o.type == STRUCTURE_STARPORT) {
+			if (strucutre->o.type == STRUCTURE_STARPORT) {
 				uint8 linkedID = 0xFF;
 				int16 loc60[UNIT_MAX];
 				Unit *u;
@@ -1516,7 +1522,7 @@ bool Structure_BuildObject(Structure *s, uint16 objectType)
 						if (loc60[i] >= unitsAtStarport) continue;
 
 						g_var_38BC++;
-						u = Unit_Allocate(UNIT_INDEX_INVALID, i, s->o.houseID);
+						u = Unit_Allocate(UNIT_INDEX_INVALID, i, strucutre->o.houseID);
 						g_var_38BC--;
 
 						if (u != NULL) {
@@ -1544,139 +1550,31 @@ bool Structure_BuildObject(Structure *s, uint16 objectType)
 					if ((buildable & (1 << i)) == 0) continue;
 					g_table_unitInfo[i].o.available = 1;
 					if (objectType != 0xFFFE) continue;
-					s->objectType = i;
+					strucutre->objectType = i;
 					return false;
 				}
 			}
 		}
 
 		if (objectType == 0xFFFF) {
-			FactoryResult res;
+			asyncSelectStrucutreData.strucutre = strucutre;
+			asyncSelectStrucutreData.objectType = objectType;
 
-			Sprites_UnloadTiles();
+			Async_DisplayFactoryWindow(
+					g_factoryWindowConstructionYard,
+					strucutre->o.type == STRUCTURE_STARPORT ? 1 : 0,
+					upgradeCost,
+					ca_FillStructureFromFactoryResult
+			);
 
-			memmove(g_palette1, g_paletteActive, 256 * 3);
-
-			GUI_ChangeSelectionType(SELECTIONTYPE_MENTAT);
-
-			Timer_SetTimer(TIMER_GAME, false);
-
-			res = GUI_DisplayFactoryWindow(g_factoryWindowConstructionYard, s->o.type == STRUCTURE_STARPORT ? 1 : 0, upgradeCost);
-
-			Timer_SetTimer(TIMER_GAME, true);
-
-			Sprites_LoadTiles();
-
-			GFX_SetPalette(g_palette1);
-
-			GUI_ChangeSelectionType(SELECTIONTYPE_STRUCTURE);
-
-			if (res == FACTORY_RESUME) return false;
-
-			if (res == FACTORY_UPGRADE) {
-				Structure_SetUpgradingState(s, 1, NULL);
-				return false;
-			}
-
-			if (res == FACTORY_BUY) {
-				uint8 i;
-
-				for (i = 0; i < 25; i++) {
-					Unit *u;
-
-					if (g_factoryWindowItems[i].amount == 0) continue;
-					objectType = g_factoryWindowItems[i].objectType;
-
-					if (s->o.type != STRUCTURE_STARPORT) {
-						Structure_CancelBuild(s);
-
-						s->objectType = objectType;
-
-						if (!g_factoryWindowConstructionYard) continue;
-
-						if (Structure_CheckAvailableConcrete(objectType, s->o.houseID)) continue;
-
-						if (GUI_DisplayHint(STR_THERE_ISNT_ENOUGH_OPEN_CONCRETE_TO_PLACE_THIS_STRUCTURE_YOU_MAY_PROCEED_BUT_WITHOUT_ENOUGH_CONCRETE_THE_BUILDING_WILL_NEED_REPAIRS, g_table_structureInfo[objectType].o.spriteID) == 0) continue;
-
-						s->objectType = objectType;
-
-						return false;
-					}
-
-					g_var_38BC++;
-					{
-						tile32 tile;
-						tile.tile = 0xFFFFFFFF;
-						u = Unit_Create(UNIT_INDEX_INVALID, (uint8)objectType, s->o.houseID, tile, 0);
-					}
-					g_var_38BC--;
-
-					if (u == NULL) {
-						h->credits += g_table_unitInfo[UNIT_CARRYALL].o.buildCredits;
-						if (s->o.houseID != g_playerHouseID) continue;
-						GUI_DisplayText(String_Get_ByIndex(STR_UNABLE_TO_CREATE_MORE), 2);
-						continue;
-					}
-
-					g_structureIndex = s->o.index;
-
-					if (h->starportTimeLeft == 0) h->starportTimeLeft = g_table_houseInfo[h->index].starportDeliveryTime;
-
-					u->o.linkedID = h->starportLinkedID & 0xFF;
-					h->starportLinkedID = u->o.index;
-
-					g_starportAvailable[objectType]--;
-					if (g_starportAvailable[objectType] <= 0) g_starportAvailable[objectType] = -1;
-
-					g_factoryWindowItems[i].amount--;
-					if (g_factoryWindowItems[i].amount != 0) i--;
-				}
-			}
+			/* ingoring */
+			return true;
 		} else {
-			s->objectType = objectType;
+			strucutre->objectType = objectType;
 		}
 	}
 
-	if (s->o.type == STRUCTURE_STARPORT) return true;
-
-	if (s->objectType != objectType) Structure_CancelBuild(s);
-
-	if (s->o.linkedID != 0xFF || objectType == 0xFFFF) return false;
-
-	if (s->o.type != STRUCTURE_CONSTRUCTION_YARD) {
-		tile32 tile;
-		tile.tile = 0xFFFFFFFF;
-
-		oi = &g_table_unitInfo[objectType].o;
-		o = &Unit_Create(UNIT_INDEX_INVALID, (uint8)objectType, s->o.houseID, tile, 0)->o;
-		str = String_Get_ByIndex(g_table_unitInfo[objectType].o.stringID_full);
-	} else {
-		oi = &g_table_structureInfo[objectType].o;
-		o = &Structure_Create(STRUCTURE_INDEX_INVALID, (uint8)objectType, s->o.houseID, 0xFFFF)->o;
-		str = String_Get_ByIndex(g_table_structureInfo[objectType].o.stringID_full);
-	}
-
-	s->o.flags.s.onHold = false;
-
-	if (o != NULL) {
-		s->o.linkedID = o->index & 0xFF;
-		s->objectType = objectType;
-		s->countDown = oi->buildTime << 8;
-
-		Structure_SetState(s, STRUCTURE_STATE_BUSY);
-
-		if (s->o.houseID != g_playerHouseID) return true;
-
-		GUI_DisplayText(String_Get_ByIndex(STR_PRODUCTION_OF_S_HAS_STARTED), 2, str);
-
-		return true;
-	}
-
-	if (s->o.houseID != g_playerHouseID) return false;
-
-	GUI_DisplayText(String_Get_ByIndex(STR_UNABLE_TO_CREATE_MORE), 2);
-
-	return false;
+	return ca_StructureFinalize(strucutre, objectType);
 }
 
 /**
@@ -2033,4 +1931,143 @@ uint16 Structure_AI_PickNextToBuild(Structure *s)
 	}
 
 	return type;
+}
+
+/*END*/
+
+void ca_FillStructureFromFactoryResult(FactoryResult res) {
+	Structure *s;
+	uint16 objectType;
+	House* house;
+
+	s = asyncSelectStrucutreData.strucutre;
+	objectType = asyncSelectStrucutreData.objectType;
+
+	house = House_Get_ByIndex(s->o.houseID);
+
+	Sprites_UnloadTiles();
+
+	memmove(g_palette1, g_paletteActive, 256 * 3);
+
+	GUI_ChangeSelectionType(SELECTIONTYPE_MENTAT);
+
+	Sprites_LoadTiles();
+
+	GFX_SetPalette(g_palette1);
+
+	GUI_ChangeSelectionType(SELECTIONTYPE_STRUCTURE);
+
+	if (res == FACTORY_RESUME) {
+		return;/* false;*/
+	}
+
+	if (res == FACTORY_UPGRADE) {
+		Structure_SetUpgradingState(s, 1, NULL);
+		return;/* false;*/
+	}
+
+	if (res == FACTORY_BUY) {
+		uint8 i;
+
+		for (i = 0; i < 25; i++) {
+			Unit *u;
+
+			if (g_factoryWindowItems[i].amount == 0) continue;
+			objectType = g_factoryWindowItems[i].objectType;
+
+			if (s->o.type != STRUCTURE_STARPORT) {
+				Structure_CancelBuild(s);
+
+				s->objectType = objectType;
+
+				if (!g_factoryWindowConstructionYard) continue;
+
+				if (Structure_CheckAvailableConcrete(objectType, s->o.houseID)) continue;
+
+				if (GUI_DisplayHint(STR_THERE_ISNT_ENOUGH_OPEN_CONCRETE_TO_PLACE_THIS_STRUCTURE_YOU_MAY_PROCEED_BUT_WITHOUT_ENOUGH_CONCRETE_THE_BUILDING_WILL_NEED_REPAIRS, g_table_structureInfo[objectType].o.spriteID) == 0) continue;
+
+				s->objectType = objectType;
+
+				return;/* false;*/
+			}
+
+			g_var_38BC++;
+			{
+				tile32 tile;
+				tile.tile = 0xFFFFFFFF;
+				u = Unit_Create(UNIT_INDEX_INVALID, (uint8)objectType, s->o.houseID, tile, 0);
+			}
+			g_var_38BC--;
+
+			if (u == NULL) {
+				house->credits += g_table_unitInfo[UNIT_CARRYALL].o.buildCredits;
+				if (s->o.houseID != g_playerHouseID) continue;
+				GUI_DisplayText(String_Get_ByIndex(STR_UNABLE_TO_CREATE_MORE), 2);
+				continue;
+			}
+
+			g_structureIndex = s->o.index;
+
+			if (house->starportTimeLeft == 0) house->starportTimeLeft = g_table_houseInfo[house->index].starportDeliveryTime;
+
+			u->o.linkedID = house->starportLinkedID & 0xFF;
+			house->starportLinkedID = u->o.index;
+
+			g_starportAvailable[objectType]--;
+			if (g_starportAvailable[objectType] <= 0) g_starportAvailable[objectType] = -1;
+
+			g_factoryWindowItems[i].amount--;
+			if (g_factoryWindowItems[i].amount != 0) i--;
+		}
+	}
+
+	ca_StructureFinalize(s, objectType);
+	return;
+}
+
+bool ca_StructureFinalize(Structure *s, uint16 objectType) {
+	char *str;
+	Object *o;
+	ObjectInfo *oi;
+
+	if (s->o.type == STRUCTURE_STARPORT) return true;
+
+	if (s->objectType != objectType) Structure_CancelBuild(s);
+
+	if (s->o.linkedID != 0xFF || objectType == 0xFFFF) return false;
+
+	if (s->o.type != STRUCTURE_CONSTRUCTION_YARD) {
+		tile32 tile;
+		tile.tile = 0xFFFFFFFF;
+
+		oi = &g_table_unitInfo[objectType].o;
+		o = &Unit_Create(UNIT_INDEX_INVALID, (uint8)objectType, s->o.houseID, tile, 0)->o;
+		str = String_Get_ByIndex(g_table_unitInfo[objectType].o.stringID_full);
+	} else {
+		oi = &g_table_structureInfo[objectType].o;
+		o = &Structure_Create(STRUCTURE_INDEX_INVALID, (uint8)objectType, s->o.houseID, 0xFFFF)->o;
+		str = String_Get_ByIndex(g_table_structureInfo[objectType].o.stringID_full);
+	}
+
+	s->o.flags.s.onHold = false;
+
+	if (o != NULL) {
+		s->o.linkedID = o->index & 0xFF;
+		s->objectType = objectType;
+		s->countDown = oi->buildTime << 8;
+
+		Structure_SetState(s, STRUCTURE_STATE_BUSY);
+
+		if (s->o.houseID != g_playerHouseID) return true;
+
+		GUI_DisplayText(String_Get_ByIndex(STR_PRODUCTION_OF_S_HAS_STARTED), 2, str);
+
+		return true;
+	}
+
+	if (s->o.houseID != g_playerHouseID) return false;
+
+	GUI_DisplayText(String_Get_ByIndex(STR_UNABLE_TO_CREATE_MORE), 2);
+
+	return false;
 }

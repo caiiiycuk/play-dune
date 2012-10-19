@@ -1830,6 +1830,7 @@ static void GameLoop_GameIntroAnimationMenu()
 
 	GUI_Mouse_Show_Safe();
 
+	g_debugSkipDialogs = true;
 	if (!g_debugSkipDialogs) {
 		uint16 stringID;
 		uint16 maxWidth;
@@ -2026,6 +2027,7 @@ static void GameLoop_GameIntroAnimationMenu()
 	if (s_enableLog != 0) Mouse_SetMouseMode((uint8)s_enableLog, "DUNE.LOG");
 
 	if (!loc02) {
+		g_playerHouseID = HOUSE_HARKONNEN;
 		if (g_playerHouseID == HOUSE_INVALID) {
 			GUI_Mouse_Show_Safe();
 

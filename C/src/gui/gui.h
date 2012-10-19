@@ -125,7 +125,6 @@ extern void GUI_InitColors(const uint8 *colors, uint8 first, uint8 last);
 extern void GUI_DrawLine(int16 x1, int16 y1, int16 x2, int16 y2, uint8 color);
 extern void GUI_SetClippingArea(uint16 left, uint16 top, uint16 right, uint16 bottom);
 extern void GUI_Screen_Copy(int16 xSrc, int16 ySrc, int16 xDst, int16 yDst, int16 width, int16 height, int16 memBlockSrc, int16 memBlockDst);
-extern FactoryResult GUI_DisplayFactoryWindow(bool isConstructionYard, bool isStarPort, uint16 upgradeCost);
 extern char *GUI_String_Get_ByIndex(int16 stringID);
 extern uint16 GUI_StrategicMap_Show(uint16 campaignID, bool win);
 extern void GUI_ClearScreen(uint16 arg06);
@@ -161,5 +160,8 @@ extern void GUI_SetPaletteAnimated(uint8 *palette, int16 ticksOfAnimation);
 
 /* editbox.c */
 extern uint16 GUI_EditBox(char *text, uint16 maxLength, uint16 unknown1, struct Widget *w, uint16 (*tickProc)(), uint16 unknown4);
+
+/* Async */
+extern void Async_DisplayFactoryWindow(bool isConstructionYard, bool isStarPort, uint16 upgradeCost, void (*callback)(FactoryResult));
 
 #endif /* GUI_GUI_H */

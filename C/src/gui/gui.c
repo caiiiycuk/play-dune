@@ -48,6 +48,8 @@
 #include "../video/video.h"
 #include "../wsa.h"
 
+#include "../async.h"
+
 MSVC_PACKED_BEGIN
 typedef struct ClippingArea {
 	/* 0000(2)   */ PACK uint16 left;                       /*!< ?? */
@@ -2725,19 +2727,15 @@ static void GUI_FactoryWindow_Init()
 	GFX_Screen_SetActive(oldScreenID);
 }
 
-/**
- * Display the window where you can order/build stuff for a structure.
- * @param var06 Unknown.
- * @param isStarPort True if this is for a starport.
- * @param var0A Unknown.
- * @return Unknown value.
- */
-FactoryResult GUI_DisplayFactoryWindow(bool isConstructionYard, bool isStarPort, uint16 upgradeCost)
-{
-	uint16 oldScreenID = GFX_Screen_SetActive(0);
-	uint8 backup[3];
+static uint16 ca_oldScreenID = 0;
+static uint8 ca_backup[3];
+void (*ca_callback)(FactoryResult);
 
-	memcpy(backup, g_palette1 + 255 * 3, 3);
+void ca_GUI_DisplayFactoryWindow_Open(bool isConstructionYard, bool isStarPort, uint16 upgradeCost) {
+	ca_oldScreenID = GFX_Screen_SetActive(0);
+	Timer_SetTimer(TIMER_GAME, false);
+
+	memcpy(ca_backup, g_palette1 + 255 * 3, 3);
 
 	g_factoryWindowConstructionYard = isConstructionYard;
 	g_factoryWindowStarport = isStarPort;
@@ -2749,35 +2747,63 @@ FactoryResult GUI_DisplayFactoryWindow(bool isConstructionYard, bool isStarPort,
 	GUI_FactoryWindow_UpdateSelection(true);
 
 	g_factoryWindowResult = FACTORY_CONTINUE;
-	while (g_factoryWindowResult == FACTORY_CONTINUE) {
-		uint16 event;
+}
 
-		GUI_DrawCredits(g_playerHouseID, 0);
-
-		GUI_FactoryWindow_UpdateSelection(false);
-
-		event = GUI_Widget_HandleEvents(g_widgetInvoiceTail);
-
-		if (event == 0x6E) GUI_Production_ResumeGame_Click(NULL);
-
-		GUI_PaletteAnimate();
-		sleepIdle();
-	}
-
+void ca_GUI_DisplayFactoryWindow_Close() {
 	GUI_DrawCredits(g_playerHouseID, 1);
 
-	GFX_Screen_SetActive(oldScreenID);
+	GFX_Screen_SetActive(ca_oldScreenID);
 
 	GUI_FactoryWindow_B495_0F30();
 
-	memcpy(g_palette1 + 255 * 3, backup, 3);
+	memcpy(g_palette1 + 255 * 3, ca_backup, 3);
 
 	GFX_SetPalette(g_palette1);
 
 	/* Visible credits have to be reset, as it might not be the real value */
 	g_playerCredits = 0xFFFF;
 
-	return g_factoryWindowResult;
+	Timer_SetTimer(TIMER_GAME, true);
+
+	ca_callback(g_factoryWindowResult);
+}
+
+
+bool ca_ShouldDisplayFactoryWindow() {
+	return g_factoryWindowResult == FACTORY_CONTINUE;
+}
+
+void ca_DisplayFactoryWindowLoop() {
+	uint16 event;
+
+	GUI_DrawCredits(g_playerHouseID, 0);
+
+	GUI_FactoryWindow_UpdateSelection(false);
+
+	event = GUI_Widget_HandleEvents(g_widgetInvoiceTail);
+
+	if (event == 0x6E) GUI_Production_ResumeGame_Click(NULL);
+
+	GUI_PaletteAnimate();
+	sleepIdle();
+}
+
+/**
+ * Display the window where you can order/build stuff for a structure.
+ * @param var06 Unknown.
+ * @param isStarPort True if this is for a starport.
+ * @param var0A Unknown.
+ * @return Unknown value.
+ */
+void Async_DisplayFactoryWindow(bool isConstructionYard, bool isStarPort, uint16 upgradeCost, void (*callback)(FactoryResult)) {
+	ca_GUI_DisplayFactoryWindow_Open(isConstructionYard, isStarPort, upgradeCost);
+	ca_callback = callback;
+
+	Async_InvokeWhile(
+		ca_DisplayFactoryWindowLoop,
+		ca_ShouldDisplayFactoryWindow,
+		ca_GUI_DisplayFactoryWindow_Close
+	);
 }
 
 char *GUI_String_Get_ByIndex(int16 stringID)

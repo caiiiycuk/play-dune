@@ -3,23 +3,11 @@
 /** @file src/timer.c Timer routines. */
 
 #include <stdlib.h>
-#if !defined(_MSC_VER)
-	#include <sys/time.h>
-#endif /* _MSC_VER */
-#if defined(_WIN32)
-	#define _WIN32_WINNT 0x0500
-	#include <windows.h>
-#else
-	#if !defined(__USE_POSIX)
-		#define __USE_POSIX
-	#endif /* !__USE_POSIX */
-	#include <signal.h>
-#endif /* _WIN32 */
+#include <sys/time.h>
+
 #include "types.h"
 #include "os/sleep.h"
-
 #include "timer.h"
-
 
 
 uint32 g_timerGUI = 0;                                      /*!< Tick counter. Increases with 1 every tick when Timer 1 is enabled. Used for GUI. */
@@ -37,13 +25,7 @@ typedef struct TimerNode {
 	void (*callback)();
 } TimerNode;
 
-#if defined(_WIN32)
-static HANDLE s_timerMainThread = NULL;
-static HANDLE s_timerThread = NULL;
-static int s_timerTime;
-#else
 static struct itimerval s_timerTime;
-#endif /* _WIN32 */
 
 static TimerNode *s_timerNodes = NULL;
 static int s_timerNodeCount = 0;
@@ -56,21 +38,15 @@ const uint32 s_timerSpeed = 10000; /* Our timer runs at 100Hz */
 
 static uint32 Timer_GetTime()
 {
-#if defined(_MSC_VER)
-	DWORD t;
-	t = timeGetTime();
-	return t;
-#else
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
 	return tv.tv_sec * 1000 + tv.tv_usec / 1000;
-#endif /* _MSC_VER */
 }
 
 /**
  * Run the timer interrupt handler.
  */
-static void Timer_InterruptRun()
+void Timer_InterruptRun()
 {
 	TimerNode *node;
 	uint32 new_time, usec_delta, delta;
@@ -108,40 +84,16 @@ static void Timer_InterruptRun()
 	timerLock = false;
 }
 
-#if defined(_WIN32)
-void CALLBACK Timer_InterruptWindows(LPVOID arg, BOOLEAN TimerOrWaitFired) {
-	VARIABLE_NOT_USED(arg);
-	VARIABLE_NOT_USED(TimerOrWaitFired);
-
-	SuspendThread(s_timerMainThread);
-	Timer_InterruptRun();
-	ResumeThread(s_timerMainThread);
-}
-#endif /* _WIN32 */
-
 /**
  * Suspend the timer interrupt handling.
  */
-static void Timer_InterruptSuspend()
-{
-#if defined(_WIN32)
-	if (s_timerThread != NULL) DeleteTimerQueueTimer(NULL, s_timerThread, NULL);
-	s_timerThread = NULL;
-#else
-	setitimer(ITIMER_REAL, NULL, NULL);
-#endif /* _WIN32 */
+void Timer_InterruptSuspend() {
 }
 
 /**
  * Resume the timer interrupt handling.
  */
-static void Timer_InterruptResume()
-{
-#if defined(_WIN32)
-	CreateTimerQueueTimer(&s_timerThread, NULL, Timer_InterruptWindows, NULL, s_timerTime, s_timerTime, WT_EXECUTEINTIMERTHREAD);
-#else
-	setitimer(ITIMER_REAL, &s_timerTime, NULL);
-#endif /* _WIN32 */
+void Timer_InterruptResume() {
 }
 
 /**
@@ -150,25 +102,6 @@ static void Timer_InterruptResume()
 void Timer_Init()
 {
 	s_timerLastTime = Timer_GetTime();
-
-#if defined(_WIN32)
-	s_timerTime = s_timerSpeed / 1000;
-	DuplicateHandle(GetCurrentProcess(), GetCurrentThread(), GetCurrentProcess(), &s_timerMainThread, 0, FALSE, DUPLICATE_SAME_ACCESS);
-#else
-	s_timerTime.it_value.tv_sec = 0;
-	s_timerTime.it_value.tv_usec = s_timerSpeed;
-	s_timerTime.it_interval.tv_sec = 0;
-	s_timerTime.it_interval.tv_usec = s_timerSpeed;
-
-	{
-		struct sigaction timerSignal;
-
-		sigemptyset(&timerSignal.sa_mask);
-		timerSignal.sa_handler = Timer_InterruptRun;
-		timerSignal.sa_flags   = 0;
-		sigaction(SIGALRM, &timerSignal, NULL);
-	}
-#endif /* _WIN32 */
 	Timer_InterruptResume();
 }
 
@@ -178,10 +111,6 @@ void Timer_Init()
 void Timer_Uninit()
 {
 	Timer_InterruptSuspend();
-#if defined(_WIN32)
-	CloseHandle(s_timerMainThread);
-#endif /* _WIN32 */
-
 	free(s_timerNodes); s_timerNodes = NULL;
 	s_timerNodeCount = 0;
 	s_timerNodeSize = 0;
@@ -284,4 +213,8 @@ void Timer_Sleep(uint16 ticks)
 {
 	uint32 tick = g_timerSleep + ticks;
 	while (tick >= g_timerSleep) sleepIdle();
+}
+
+void idle() {
+	Timer_InterruptRun();
 }
