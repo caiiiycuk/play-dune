@@ -61,6 +61,12 @@
 #include "video/video.h"
 #include "wsa.h"
 
+#if EMSCRIPTEN
+#include <emscripten.h>
+extern void jlog(int);
+#else
+void jlog(int x) {}
+#endif
 
 char *window_caption = "OpenDUNE - Pre v0.8";
 
@@ -1815,21 +1821,29 @@ static void GameLoop_GameIntroAnimationMenu()
 
 	Sprites_SetMouseSprite(0, 0, g_sprites[0]);
 
+	jlog(1002);
 	while (g_mouseHiddenDepth > 1) {
+		jlog(1003);
 		GUI_Mouse_Show_Safe();
 	}
+	jlog(1004);
 
 	Window_WidgetClick_Create();
+	jlog(2001);
 	GameOptions_Load();
+	jlog(2002);
 	Unit_Init();
+	jlog(2003);
 	Team_Init();
+	jlog(2004);
 	House_Init();
+	jlog(2005);
 	Structure_Init();
-
+	jlog(2006);
 	loc06 = true;
 
 	GUI_Mouse_Show_Safe();
-
+	jlog(1005);
 	g_debugSkipDialogs = true;
 	if (!g_debugSkipDialogs) {
 		uint16 stringID;
@@ -1849,6 +1863,7 @@ static void GameLoop_GameIntroAnimationMenu()
 
 		while (true) {
 			char *strings[6];
+			jlog(1006);
 
 			switch (stringID) {
 				case STR_REPLAY_INTRODUCTION:
@@ -1998,6 +2013,7 @@ static void GameLoop_GameIntroAnimationMenu()
 
 			if (stringID == STR_PLAY_A_GAME) break;
 
+			jlog(1001);
 			sleepIdle();
 		}
 	} else {
@@ -2125,152 +2141,163 @@ static void InGame_Numpad_Move(uint16 key)
 	}
 }
 
+static uint16 key;
+
+static void LoopMain() {
+	static uint32 l_timerNext = 0;
+	static uint32 l_timerUnitStatus = 0;
+	static int16  l_selectionState = -2;
+
+	if (g_gameMode == GM_PICKHOUSE) {
+		Music_Play(28);
+
+		g_playerHouseID = HOUSE_MERCENARY;
+		g_playerHouseID = GUI_PickHouse();
+
+		GUI_Mouse_Hide_Safe();
+
+		Memory_ClearBlock(1);
+
+		Sprites_LoadTiles();
+
+		GUI_Palette_CreateRemap(g_playerHouseID);
+
+		Voice_LoadVoices(g_playerHouseID);
+
+		GUI_Mouse_Show_Safe();
+
+		g_gameMode = GM_RESTART;
+		g_scenarioID = 1;
+		g_campaignID = 0;
+		g_strategicRegionBits = 0;
+	}
+
+	if (g_selectionTypeNew != g_selectionType) {
+		GUI_ChangeSelectionType(g_selectionTypeNew);
+	}
+
+	GUI_PaletteAnimate();
+
+	if (g_gameMode == GM_RESTART) {
+		GUI_ChangeSelectionType(SELECTIONTYPE_MENTAT);
+
+		Game_LoadScenario(g_playerHouseID, g_scenarioID);
+		if (!g_debugScenario && !g_debugSkipDialogs) GUI_Mentat_ShowBriefing();
+
+		g_gameMode = GM_NORMAL;
+
+		GUI_ChangeSelectionType(SELECTIONTYPE_STRUCTURE);
+
+		Music_Play(Tools_RandomRange(0, 8) + 8);
+		l_timerNext = g_timerGUI + 300;
+	}
+
+	if (l_selectionState != g_selectionState) {
+		Map_SetSelectionObjectPosition(0xFFFF);
+		Map_SetSelectionObjectPosition(g_selectionRectanglePosition);
+		l_selectionState = g_selectionState;
+	}
+
+	if (!Driver_Voice_IsPlaying() && !Sound_StartSpeech()) {
+		if (g_gameConfig.music == 0) {
+			Music_Play(2);
+
+			g_musicInBattle = 0;
+		} else if (g_musicInBattle > 0) {
+			Music_Play(Tools_RandomRange(0, 5) + 17);
+			l_timerNext = g_timerGUI + 300;
+			g_musicInBattle = -1;
+		} else {
+			g_musicInBattle = 0;
+			if (g_enableSoundMusic != 0 && g_timerGUI > l_timerNext) {
+				if (!Driver_Music_IsPlaying()) {
+					Music_Play(Tools_RandomRange(0, 8) + 8);
+					l_timerNext = g_timerGUI + 300;
+				}
+			}
+		}
+	}
+
+	GFX_Screen_SetActive(0);
+
+	key = GUI_Widget_HandleEvents(g_widgetLinkedListHead);
+
+	if (g_selectionType == SELECTIONTYPE_TARGET || g_selectionType == SELECTIONTYPE_PLACE || g_selectionType == SELECTIONTYPE_UNIT || g_selectionType == SELECTIONTYPE_STRUCTURE) {
+		if (g_unitSelected != NULL) {
+			if (l_timerUnitStatus < g_timerGame) {
+				Unit_DisplayStatusText(g_unitSelected);
+				l_timerUnitStatus = g_timerGame + 300;
+			}
+
+			if (g_selectionType != SELECTIONTYPE_TARGET) {
+				g_selectionPosition = Tile_PackTile(Tile_Center(g_unitSelected->o.position));
+			}
+		}
+
+		GUI_Widget_ActionPanel_Draw(false);
+
+		InGame_Numpad_Move(key);
+
+		GUI_DrawCredits(g_playerHouseID, 0);
+
+		GameLoop_Team();
+		GameLoop_Unit();
+		GameLoop_Structure();
+		GameLoop_House();
+
+		GUI_DrawScreen(0);
+	}
+
+	GUI_DisplayText(NULL, 0);
+
+	if (g_var_38F8 && !g_debugScenario) {
+		GameLoop_LevelEnd();
+	}
+
+	if (!g_var_38F8) abort();
+
+	sleepIdle();
+}
+
 /**
  * Main game loop.
  */
 static void GameLoop_Main()
 {
-	static uint32 l_timerNext = 0;
-	static uint32 l_timerUnitStatus = 0;
-	static int16  l_selectionState = -2;
-
-	uint16 key;
-
+jlog(6);
 	String_Init();
+jlog(7);	
 	Sprites_Init();
-
+jlog(8);
 	GameLoop_GameIntroAnimationMenu();
-
+jlog(9);
 	Timer_SetTimer(TIMER_GAME, true);
-
+jlog(10);
 	GUI_Mouse_Show_Safe();
-
+jlog(11);
 	Music_Play(Tools_RandomRange(0, 5) + 8);
-
+jlog(12);
+#if EMSCRIPTEN
+	emscripten_set_main_loop(LoopMain, 0, false);
+#else
 	while (true) {
-		if (g_gameMode == GM_PICKHOUSE) {
-			Music_Play(28);
-
-			g_playerHouseID = HOUSE_MERCENARY;
-			g_playerHouseID = GUI_PickHouse();
-
-			GUI_Mouse_Hide_Safe();
-
-			Memory_ClearBlock(1);
-
-			Sprites_LoadTiles();
-
-			GUI_Palette_CreateRemap(g_playerHouseID);
-
-			Voice_LoadVoices(g_playerHouseID);
-
-			GUI_Mouse_Show_Safe();
-
-			g_gameMode = GM_RESTART;
-			g_scenarioID = 1;
-			g_campaignID = 0;
-			g_strategicRegionBits = 0;
-		}
-
-		if (g_selectionTypeNew != g_selectionType) {
-			GUI_ChangeSelectionType(g_selectionTypeNew);
-		}
-
-		GUI_PaletteAnimate();
-
-		if (g_gameMode == GM_RESTART) {
-			GUI_ChangeSelectionType(SELECTIONTYPE_MENTAT);
-
-			Game_LoadScenario(g_playerHouseID, g_scenarioID);
-			if (!g_debugScenario && !g_debugSkipDialogs) GUI_Mentat_ShowBriefing();
-
-			g_gameMode = GM_NORMAL;
-
-			GUI_ChangeSelectionType(SELECTIONTYPE_STRUCTURE);
-
-			Music_Play(Tools_RandomRange(0, 8) + 8);
-			l_timerNext = g_timerGUI + 300;
-		}
-
-		if (l_selectionState != g_selectionState) {
-			Map_SetSelectionObjectPosition(0xFFFF);
-			Map_SetSelectionObjectPosition(g_selectionRectanglePosition);
-			l_selectionState = g_selectionState;
-		}
-
-		if (!Driver_Voice_IsPlaying() && !Sound_StartSpeech()) {
-			if (g_gameConfig.music == 0) {
-				Music_Play(2);
-
-				g_musicInBattle = 0;
-			} else if (g_musicInBattle > 0) {
-				Music_Play(Tools_RandomRange(0, 5) + 17);
-				l_timerNext = g_timerGUI + 300;
-				g_musicInBattle = -1;
-			} else {
-				g_musicInBattle = 0;
-				if (g_enableSoundMusic != 0 && g_timerGUI > l_timerNext) {
-					if (!Driver_Music_IsPlaying()) {
-						Music_Play(Tools_RandomRange(0, 8) + 8);
-						l_timerNext = g_timerGUI + 300;
-					}
-				}
-			}
-		}
-
-		GFX_Screen_SetActive(0);
-
-		key = GUI_Widget_HandleEvents(g_widgetLinkedListHead);
-
-		if (g_selectionType == SELECTIONTYPE_TARGET || g_selectionType == SELECTIONTYPE_PLACE || g_selectionType == SELECTIONTYPE_UNIT || g_selectionType == SELECTIONTYPE_STRUCTURE) {
-			if (g_unitSelected != NULL) {
-				if (l_timerUnitStatus < g_timerGame) {
-					Unit_DisplayStatusText(g_unitSelected);
-					l_timerUnitStatus = g_timerGame + 300;
-				}
-
-				if (g_selectionType != SELECTIONTYPE_TARGET) {
-					g_selectionPosition = Tile_PackTile(Tile_Center(g_unitSelected->o.position));
-				}
-			}
-
-			GUI_Widget_ActionPanel_Draw(false);
-
-			InGame_Numpad_Move(key);
-
-			GUI_DrawCredits(g_playerHouseID, 0);
-
-			GameLoop_Team();
-			GameLoop_Unit();
-			GameLoop_Structure();
-			GameLoop_House();
-
-			GUI_DrawScreen(0);
-		}
-
-		GUI_DisplayText(NULL, 0);
-
-		if (g_var_38F8 && !g_debugScenario) {
-			GameLoop_LevelEnd();
-		}
-
-		if (!g_var_38F8) break;
-
-		sleepIdle();
+		LoopMain();
 	}
-
+#endif
+	return;
+jlog(13);
 	GUI_Mouse_Hide_Safe();
-
+jlog(14);
 	if (s_enableLog != 0) Mouse_SetMouseMode(INPUT_MOUSE_MODE_NORMAL, "DUNE.LOG");
-
+jlog(15);
 	GUI_Mouse_Hide_Safe();
-
+jlog(16);
 	Widget_SetCurrentWidget(0);
-
+jlog(17);
 	GFX_Screen_SetActive(2);
-
+jlog(18);
 	GFX_ClearScreen();
-
+jlog(19);
 	GUI_Screen_FadeIn(g_curWidgetXBase, g_curWidgetYBase, g_curWidgetXBase, g_curWidgetYBase, g_curWidgetWidth, g_curWidgetHeight, 2, 0);
 }
 
@@ -2324,6 +2351,8 @@ int SDL_main(int argc, char **argv)
 int main(int argc, char **argv)
 #endif /* __APPLE__ */
 {
+	char cwd[1024];
+
 #if defined(_WIN32)
 	#if defined(__MINGW32__) && defined(__STRICT_ANSI__)
 		int __cdecl __MINGW_NOTHROW _fileno (FILE*);
@@ -2339,6 +2368,15 @@ int main(int argc, char **argv)
 	if (out != NULL) _dup2(_fileno(out), _fileno(stdout));
 	FreeConsole();
 #endif
+	chdir("/home/caiiiycuk/play-dune/");
+
+
+   if (getcwd(cwd, sizeof(cwd)) != NULL)
+       fprintf(stdout, "Current working dir: %s\n", cwd);
+   else
+       perror("getcwd() error");
+
+
 	CrashLog_Init();
 
 	VARIABLE_NOT_USED(argc);
@@ -2348,21 +2386,23 @@ int main(int argc, char **argv)
 		Error("Missing dune.cfg file.\n");
 		exit(1);
 	}
-
+jlog(1);
 	Input_Init();
-
+jlog(2);
 	Drivers_All_Init();
-
+jlog(3);
 	if (!Unknown_25C4_000E()) exit(1);
 
 	g_var_7097 = 0;
-
+jlog(4);
 	GameLoop_Main();
-
+/*
 	printf("%s\n", String_Get_ByIndex(STR_THANK_YOU_FOR_PLAYING_DUNE_II));
 
 	PrepareEnd();
 	exit(0);
+*/
+	return 0;
 }
 
 /**

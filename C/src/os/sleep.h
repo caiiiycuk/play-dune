@@ -21,6 +21,8 @@
 	#define msleep(x) usleep(x * 1000)
 #endif /* _WIN32 */
 
-#define sleepIdle() msleep(1)
+extern void idle();
+
+#define sleepIdle() idle()
 
 #endif /* OS_SLEEP_H */

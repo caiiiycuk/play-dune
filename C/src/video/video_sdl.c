@@ -522,6 +522,11 @@ void Video_Tick()
 	Video_DrawScreen();
 
 	SDL_UpdateRect(s_gfx_surface, 0, 0, 0, 0);
+	
+#if EMSCRIPTEN
+	SDL_LockSurface(s_gfx_surface);
+	SDL_UnlockSurface(s_gfx_surface);
+#endif
 
 	s_video_lock = false;
 }
@@ -546,7 +551,9 @@ void Video_SetPalette(void *palette, int from, int length)
 		paletteRGB[i].b = ((*p++) & 0x3F) * 4;
 	}
 
-	SDL_SetPalette(s_gfx_surface, SDL_LOGPAL | SDL_PHYSPAL, paletteRGB, from, length);
+	SDL_SetColors(s_gfx_surface, paletteRGB, from, length);
+
+	/*SDL_SetPalette(s_gfx_surface, SDL_LOGPAL | SDL_PHYSPAL, paletteRGB, from, length);*/
 
 	s_video_lock = false;
 }

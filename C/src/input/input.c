@@ -500,7 +500,7 @@ uint16 Input_Wait()
 		value = s_historyHead;
 		if (value != s_historyTail) break;
 
-		msleep(0);
+		sleepIdle();
 	}
 
 	value = Input_ReadHistory(value);
@@ -607,7 +607,7 @@ uint16 Input_WaitForValidInput()
 			index = s_historyHead;
 			if (index != s_historyTail) break;
 
-			msleep(0);
+			sleepIdle();
 		}
 
 		value = Input_ReadHistory(index);
@@ -654,7 +654,7 @@ uint16 Input_Keyboard_NextKey()
 
 		s_historyHead = index + 2;
 
-		msleep(0);
+		sleepIdle();
 	}
 
 	if (value != 0) {

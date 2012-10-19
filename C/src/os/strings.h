@@ -81,8 +81,8 @@
 	#if !defined(__MINGW32__) && defined(__GNUC__) && !defined(snprintf)
 		/* (v)snprintf is in fact C99, but we like to use it over (v)sprintf for the obvious reasons */
 		#if !defined(__APPLE__)
-			extern int snprintf (char *__restrict __s, size_t __maxlen, __const char *__restrict __format, ...) __THROW __attribute__ ((__format__ (__printf__, 3, 4)));
-			extern int vsnprintf (char *__restrict __s, size_t __maxlen, __const char *__restrict __format, va_list __arg) __THROW __attribute__ ((__format__ (__printf__, 3, 0)));
+			extern int snprintf (char *__restrict __s, size_t __maxlen, __const char *__restrict __format, ...);
+			extern int vsnprintf (char *__restrict __s, size_t __maxlen, __const char *__restrict __format, va_list __arg);
 		#else /* __APPLE__ */
 			extern int snprintf(char * __restrict, size_t, const char * __restrict, ...) __DARWIN_LDBL_COMPAT(snprintf);
 		#endif /* __APPLE__ */
