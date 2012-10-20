@@ -744,51 +744,42 @@ static void GUI_Widget_SetProperties(uint16 index, uint16 xpos, uint16 ypos, uin
 	if (g_curWidgetIndex == index) Widget_SetCurrentWidget(index);
 }
 
-/**
- * Displays a message and waits for a user action.
- * @param str The text to display.
- * @param spriteID The sprite to draw (0xFFFF for none).
- * @param ... The args for the text.
- * @return ??
- */
-uint16 GUI_DisplayModalMessage(char *str, uint16 spriteID, ...)
-{
-	static char textBuffer[768];
+typedef struct AsyncDisplayModalMessage {
+	uint16 spriteID;
 
-	va_list ap;
+	char textBuffer[768];
 	uint16 oldValue_07AE_0000;
 	uint16 ret;
 	uint16 oldScreenID;
-	uint8 *screenBackup = NULL;
+	uint8 *screenBackup;
+} AsyncDisplayModalMessage;
 
-	return 0;
+static AsyncDisplayModalMessage asyncModalMessage;
 
-	va_start(ap, spriteID);
-	vsnprintf(textBuffer, sizeof(textBuffer), str, ap);
-	va_end(ap);
-
+void async_DisplayModalMessageOpen() {
 	GUI_Mouse_Hide_Safe();
 
-	oldScreenID = GFX_Screen_SetActive(0);
+	asyncModalMessage.oldScreenID = GFX_Screen_SetActive(0);
 
 	GUI_DrawText_Wrapper(NULL, 0, 0, 0, 0, 0x22);
 
-	oldValue_07AE_0000 = Widget_SetCurrentWidget(1);
+	asyncModalMessage.oldValue_07AE_0000 = Widget_SetCurrentWidget(1);
 
-	g_widgetProperties[1].height = g_fontCurrent->height * max(GUI_SplitText(textBuffer, ((g_curWidgetWidth - ((spriteID == 0xFFFF) ? 2 : 7)) << 3) - 6, '\r'), 3) + 18;
+	g_widgetProperties[1].height = g_fontCurrent->height
+			* max(GUI_SplitText(asyncModalMessage.textBuffer, ((g_curWidgetWidth - ((asyncModalMessage.spriteID == 0xFFFF) ? 2 : 7)) << 3) - 6, '\r'), 3) + 18;
 
 	Widget_SetCurrentWidget(1);
 
-	screenBackup = malloc(GFX_GetSize(g_curWidgetWidth * 8, g_curWidgetHeight));
+	asyncModalMessage.screenBackup = malloc(GFX_GetSize(g_curWidgetWidth * 8, g_curWidgetHeight));
 
-	if (screenBackup != NULL) {
-		GFX_CopyToBuffer(g_curWidgetXBase * 8, g_curWidgetYBase, g_curWidgetWidth * 8, g_curWidgetHeight, screenBackup);
+	if (asyncModalMessage.screenBackup != NULL) {
+		GFX_CopyToBuffer(g_curWidgetXBase * 8, g_curWidgetYBase, g_curWidgetWidth * 8, g_curWidgetHeight, asyncModalMessage.screenBackup);
 	}
 
 	GUI_Widget_DrawBorder(1, 1, 1);
 
-	if (spriteID != 0xFFFF) {
-		GUI_DrawSprite(g_screenActiveID, g_sprites[spriteID], 7, 8, 1, 0x4000);
+	if (asyncModalMessage.spriteID != 0xFFFF) {
+		GUI_DrawSprite(g_screenActiveID, g_sprites[asyncModalMessage.spriteID], 7, 8, 1, 0x4000);
 		GUI_Widget_SetProperties(1, g_curWidgetXBase + 5, g_curWidgetYBase + 8, g_curWidgetWidth - 7, g_curWidgetHeight - 16);
 	} else {
 		GUI_Widget_SetProperties(1, g_curWidgetXBase + 1, g_curWidgetYBase + 8, g_curWidgetWidth - 2, g_curWidgetHeight - 16);
@@ -796,7 +787,7 @@ uint16 GUI_DisplayModalMessage(char *str, uint16 spriteID, ...)
 
 	g_curWidgetFGColourNormal = 0;
 
-	GUI_DrawText(textBuffer, g_curWidgetXBase << 3, g_curWidgetYBase, g_curWidgetFGColourBlink, g_curWidgetFGColourNormal);
+	GUI_DrawText(asyncModalMessage.textBuffer, g_curWidgetXBase << 3, g_curWidgetYBase, g_curWidgetFGColourBlink, g_curWidgetFGColourNormal);
 
 	GFX_SetPalette(g_palette1);
 
@@ -809,41 +800,73 @@ uint16 GUI_DisplayModalMessage(char *str, uint16 spriteID, ...)
 	}
 
 	Input_History_Clear();
+}
 
-	do {
-		GUI_PaletteAnimate();
+bool async_DisplayModalMessageCondition() {
+	uint16 ret = Input_GetValidInput();
+	return ret == 0 || (ret & 0x800) != 0;
+}
 
-		ret = Input_WaitForValidInput();
-		sleepIdle();
-	} while (ret == 0 || (ret & 0x800) != 0);
+void async_DisplayModalMessageLoop() {
+	GUI_PaletteAnimate();
+	sleepIdle();
+}
 
+void async_DisplayModalMessageClose() {
 	Input_HandleInput(0x841);
 
 	GUI_Mouse_Hide_Safe();
 
-	if (spriteID != 0xFFFF) {
+	if (asyncModalMessage.spriteID != 0xFFFF) {
 		GUI_Widget_SetProperties(1, g_curWidgetXBase - 5, g_curWidgetYBase - 8, g_curWidgetWidth + 7, g_curWidgetHeight + 16);
 	} else {
 		GUI_Widget_SetProperties(1, g_curWidgetXBase - 1, g_curWidgetYBase - 8, g_curWidgetWidth + 2, g_curWidgetHeight + 16);
 	}
 
-	if (screenBackup != NULL) {
-		GFX_CopyFromBuffer(g_curWidgetXBase * 8, g_curWidgetYBase, g_curWidgetWidth * 8, g_curWidgetHeight, screenBackup);
+	if (asyncModalMessage.screenBackup != NULL) {
+		GFX_CopyFromBuffer(g_curWidgetXBase * 8, g_curWidgetYBase, g_curWidgetWidth * 8, g_curWidgetHeight, asyncModalMessage.screenBackup);
 	}
 
-	Widget_SetCurrentWidget(oldValue_07AE_0000);
+	Widget_SetCurrentWidget(asyncModalMessage.oldValue_07AE_0000);
 
-	if (screenBackup != NULL) {
-		free(screenBackup);
+	if (asyncModalMessage.screenBackup != NULL) {
+		free(asyncModalMessage.screenBackup);
 	} else {
 		g_viewport_forceRedraw = true;
 	}
 
-	GFX_Screen_SetActive(oldScreenID);
+	GFX_Screen_SetActive(asyncModalMessage.oldScreenID);
 
 	GUI_Mouse_Show_Safe();
+}
 
-	return ret;
+/**
+ * Displays a message and waits for a user action.
+ * @param str The text to display.
+ * @param spriteID The sprite to draw (0xFFFF for none).
+ * @param ... The args for the text.
+ * @return ??
+ */
+uint16 GUI_DisplayModalMessage(char *str, uint16 spriteID, ...)
+{
+	va_list ap;
+
+	asyncModalMessage.spriteID = spriteID;
+	asyncModalMessage.screenBackup = NULL;
+
+	va_start(ap, spriteID);
+	vsnprintf(asyncModalMessage.textBuffer, sizeof(asyncModalMessage.textBuffer), str, ap);
+	va_end(ap);
+
+	Async_InvokeWhile(
+			async_DisplayModalMessageOpen,
+			async_DisplayModalMessageCondition,
+			async_DisplayModalMessageLoop,
+			async_DisplayModalMessageClose);
+
+
+	/*ignoring*/
+	return 0;
 }
 
 /**
@@ -2729,19 +2752,27 @@ static void GUI_FactoryWindow_Init()
 	GFX_Screen_SetActive(oldScreenID);
 }
 
-static uint16 ca_oldScreenID = 0;
-static uint8 ca_backup[3];
-void (*ca_callback)(FactoryResult);
+typedef struct AsyncDisplayFactoryWindow {
+	bool isConstructionYard;
+	bool isStarPort;
+	uint16 upgradeCost;
+	uint16 oldScreenID;
+	uint8 backup[3];
+	void (*callback)(FactoryResult);
+} AsyncDisplayFactoryWindow;
 
-void ca_GUI_DisplayFactoryWindow_Open(bool isConstructionYard, bool isStarPort, uint16 upgradeCost) {
-	ca_oldScreenID = GFX_Screen_SetActive(0);
+static AsyncDisplayFactoryWindow asyncDisplayFactoryWindow;
+
+
+void async_DisplayFactoryWindowOpen() {
+	asyncDisplayFactoryWindow.oldScreenID = GFX_Screen_SetActive(0);
 	Timer_SetTimer(TIMER_GAME, false);
 
-	memcpy(ca_backup, g_palette1 + 255 * 3, 3);
+	memcpy(asyncDisplayFactoryWindow.backup, g_palette1 + 255 * 3, 3);
 
-	g_factoryWindowConstructionYard = isConstructionYard;
-	g_factoryWindowStarport = isStarPort;
-	g_factoryWindowUpgradeCost = upgradeCost;
+	g_factoryWindowConstructionYard = asyncDisplayFactoryWindow.isConstructionYard;
+	g_factoryWindowStarport = asyncDisplayFactoryWindow.isStarPort;
+	g_factoryWindowUpgradeCost = asyncDisplayFactoryWindow.upgradeCost;
 	g_factoryWindowOrdered = 0;
 
 	GUI_FactoryWindow_Init();
@@ -2751,14 +2782,14 @@ void ca_GUI_DisplayFactoryWindow_Open(bool isConstructionYard, bool isStarPort, 
 	g_factoryWindowResult = FACTORY_CONTINUE;
 }
 
-void ca_GUI_DisplayFactoryWindow_Close() {
+void async_DisplayFactoryWindowClose() {
 	GUI_DrawCredits(g_playerHouseID, 1);
 
-	GFX_Screen_SetActive(ca_oldScreenID);
+	GFX_Screen_SetActive(asyncDisplayFactoryWindow.oldScreenID);
 
 	GUI_FactoryWindow_B495_0F30();
 
-	memcpy(g_palette1 + 255 * 3, ca_backup, 3);
+	memcpy(g_palette1 + 255 * 3, asyncDisplayFactoryWindow.backup, 3);
 
 	GFX_SetPalette(g_palette1);
 
@@ -2767,15 +2798,15 @@ void ca_GUI_DisplayFactoryWindow_Close() {
 
 	Timer_SetTimer(TIMER_GAME, true);
 
-	ca_callback(g_factoryWindowResult);
+	asyncDisplayFactoryWindow.callback(g_factoryWindowResult);
 }
 
 
-bool ca_ShouldDisplayFactoryWindow() {
+bool async_DisplayFactoryWindowCondition() {
 	return g_factoryWindowResult == FACTORY_CONTINUE;
 }
 
-void ca_DisplayFactoryWindowLoop() {
+void async_DisplayFactoryWindowLoop() {
 	uint16 event;
 
 	GUI_DrawCredits(g_playerHouseID, 0);
@@ -2798,13 +2829,16 @@ void ca_DisplayFactoryWindowLoop() {
  * @return Unknown value.
  */
 void Async_DisplayFactoryWindow(bool isConstructionYard, bool isStarPort, uint16 upgradeCost, void (*callback)(FactoryResult)) {
-	ca_GUI_DisplayFactoryWindow_Open(isConstructionYard, isStarPort, upgradeCost);
-	ca_callback = callback;
+	asyncDisplayFactoryWindow.isConstructionYard = isConstructionYard;
+	asyncDisplayFactoryWindow.isStarPort = isStarPort;
+	asyncDisplayFactoryWindow.upgradeCost = upgradeCost;
+	asyncDisplayFactoryWindow.callback = callback;
 
 	Async_InvokeWhile(
-		ca_DisplayFactoryWindowLoop,
-		ca_ShouldDisplayFactoryWindow,
-		ca_GUI_DisplayFactoryWindow_Close
+		async_DisplayFactoryWindowOpen,
+		async_DisplayFactoryWindowCondition,
+		async_DisplayFactoryWindowLoop,
+		async_DisplayFactoryWindowClose
 	);
 }
 
