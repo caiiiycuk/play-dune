@@ -8,22 +8,10 @@
 #ifndef ASYNC_H_
 #define ASYNC_H_
 
-#if EMSCRIPTEN
+#include "types.h"
 
-extern void Async_InvokeWhile(void (*open)(), bool (*condition)(), void (*loop)(), void (*close)());
-
-#else
-
-void Async_InvokeWhile(void (*open)(), bool (*condition)(), void (*loop)(), void (*close)()) {
-	open();
-
-	while (condition()) {
-		loop();
-	}
-
-	close();
-}
-
-#endif
+extern void AsyncInvokeWhile(void (*open)(), bool (*condition)(), void (*loop)(), void (*close)());
+extern bool isAsyncPending();
+extern void AsyncLoop();
 
 #endif /* ASYNC_H_ */

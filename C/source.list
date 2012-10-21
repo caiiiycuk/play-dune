@@ -1,4 +1,5 @@
 # Source Files
+async.c
 animation.c
 audio/driver.c
 #if WIN32

@@ -68,6 +68,8 @@ extern void jlog(int);
 void jlog(int x) {}
 #endif
 
+#include "async.h"
+
 char *window_caption = "OpenDUNE - Pre v0.8";
 
 bool g_dune2_enhanced = true; /*!< If false, the game acts exactly like the original Dune2, including bugs. */
@@ -2147,6 +2149,11 @@ static void LoopMain() {
 	static uint32 l_timerNext = 0;
 	static uint32 l_timerUnitStatus = 0;
 	static int16  l_selectionState = -2;
+
+	if (isAsyncPending()) {
+		AsyncLoop();
+		return;
+	}
 
 	if (g_gameMode == GM_PICKHOUSE) {
 		Music_Play(28);
