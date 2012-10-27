@@ -7,11 +7,13 @@ typedef struct ScheduledAsync {
 	void	(*	loop)();
 	void	(*	close)();
 	bool	firstRun;
+	void	(*	after)();
 } ScheduledAsync;
 
 #define 		MAX_SCHEDULED_COUNT 5
 ScheduledAsync 	scheduled[MAX_SCHEDULED_COUNT];
 int 			scheduledCount = 0;
+void			(*scheduledAfter)() = 0;
 
 void pushAsync(void (*open)(), bool (*condition)(), void (*loop)(), void (*close)()) {
 	int index = scheduledCount;
@@ -26,6 +28,9 @@ void pushAsync(void (*open)(), bool (*condition)(), void (*loop)(), void (*close
 	scheduled[index].loop = loop;
 	scheduled[index].close = close;
 	scheduled[index].firstRun = true;
+	scheduled[index].after = scheduledAfter;
+
+	scheduledAfter = 0;
 }
 
 ScheduledAsync* touchAsync() {
@@ -48,20 +53,29 @@ void popAsync() {
 		scheduled[first].loop 		= scheduled[second].loop;
 		scheduled[first].close 		= scheduled[second].close;
 		scheduled[first].firstRun 	= scheduled[second].firstRun;
+		scheduled[first].after 		= scheduled[second].after;
 	}
 
 	--scheduledCount;
 }
 
-void AsyncInvokeWhile(void (*open)(), bool (*condition)(), void (*loop)(), void (*close)()) {
+void Async_InvokeInLoop(void (*open)(), bool (*condition)(), void (*loop)(), void (*close)()) {
 	pushAsync(open, condition, loop, close);
 }
 
-bool isAsyncPending() {
+void Async_InvokeAfterNextLoop(void (*callback)()) {
+	if (scheduledAfter) {
+		abort();
+	}
+
+	scheduledAfter = callback;
+}
+
+bool Async_IsPending() {
 	return scheduledCount > 0;
 }
 
-void AsyncLoop() {
+void Async_Loop() {
 	ScheduledAsync* async = touchAsync();
 
 	if (async->firstRun) {
@@ -73,6 +87,11 @@ void AsyncLoop() {
 		async->loop();
 	} else {
 		async->close();
+
+		if (async->after) {
+			async->after();
+		}
+
 		popAsync();
 	}
 }

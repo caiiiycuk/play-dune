@@ -83,9 +83,9 @@ uint16 g_activeAction = 0xFFFF;      /*!< Action the controlled unit will do. */
 uint32 g_tickScenarioStart = 0;      /*!< The tick the scenario started in. */
 static uint32 s_tickGameTimeout = 0; /*!< The tick the game will timeout. */
 
-bool   g_debugGame = false;        /*!< When true, you can control the AI. */
+bool   g_debugGame = true;        /*!< When true, you can control the AI. */
 bool   g_debugScenario = false;    /*!< When true, you can review the scenario. There is no fog. The game is not running (no unit-movement, no structure-building, etc). You can click on individual tiles. */
-bool   g_debugSkipDialogs = false; /*!< When non-zero, you immediately go to house selection, and skip all intros. */
+bool   g_debugSkipDialogs = true; /*!< When non-zero, you immediately go to house selection, and skip all intros. */
 
 void *g_readBuffer = NULL;
 uint32 g_readBufferSize = 0;
@@ -114,7 +114,7 @@ static uint8                s_palettePartTarget[18];   /*!< Target palette part 
 static uint8                s_palettePartCurrent[18];  /*!< Current value of the palette part (6 colours, updated each call to #GameLoop_PalettePart_Update). */
 static uint8                s_palettePartChange[18];   /*!< Amount of change of each RGB colour of the palette part with each step. */
 
-static bool  s_debugForceWin = false; /*!< When true, you immediately win the level. */
+static bool  s_debugForceWin = true; /*!< When true, you immediately win the level. */
 
 static void *s_buffer_182E = NULL;
 static void *s_buffer_1832 = NULL;
@@ -1162,6 +1162,44 @@ static void GameLoop_GameEndAnimation()
 	GameLoop_GameCredits();
 }
 
+static void GameLoop_WonLevelEnd() {
+	GUI_Mentat_ShowWin();
+
+	Sound_Output_Feedback(40);
+	Sprites_UnloadTiles();
+
+	g_campaignID++;
+
+	GUI_EndStats_Show(g_scenario.killedAllied, g_scenario.killedEnemy, g_scenario.destroyedAllied, g_scenario.destroyedEnemy, g_scenario.harvestedAllied, g_scenario.harvestedEnemy, g_scenario.score, g_playerHouseID);
+
+	if (g_campaignID == 9) {
+		GUI_Mouse_Hide_Safe();
+
+		GUI_SetPaletteAnimated(g_palette2, 15);
+		GUI_ClearScreen(0);
+		GameLoop_GameEndAnimation();
+		PrepareEnd();
+		exit(0);
+	}
+
+	GUI_Mouse_Hide_Safe();
+	GameLoop_LevelEndAnimation();
+	GUI_Mouse_Show_Safe();
+
+	File_ReadBlockFile("IBM.PAL", g_palette1, 256 * 3);
+
+	g_scenarioID = GUI_StrategicMap_Show(g_campaignID, true);
+
+	GUI_SetPaletteAnimated(g_palette2, 15);
+
+	if (g_campaignID == 1 || g_campaignID == 7) {
+		if (!GUI_Security_Show()) {
+			PrepareEnd();
+			exit(0);
+		}
+	}
+}
+
 /**
  * Checks if the level comes to an end. If so, it shows all end-level stuff,
  *  and prepares for the next level.
@@ -1184,44 +1222,8 @@ static void GameLoop_LevelEnd()
 		GUI_ChangeSelectionType(SELECTIONTYPE_MENTAT);
 
 		if (GameLoop_IsLevelWon()) {
-			Sound_Output_Feedback(40);
-
+			Async_InvokeAfterNextLoop(GameLoop_WonLevelEnd);
 			GUI_DisplayModalMessage(String_Get_ByIndex(STR_YOU_HAVE_SUCCESSFULLY_COMPLETED_YOUR_MISSION), 0xFFFF);
-
-			GUI_Mentat_ShowWin();
-
-			Sprites_UnloadTiles();
-
-			g_campaignID++;
-
-			GUI_EndStats_Show(g_scenario.killedAllied, g_scenario.killedEnemy, g_scenario.destroyedAllied, g_scenario.destroyedEnemy, g_scenario.harvestedAllied, g_scenario.harvestedEnemy, g_scenario.score, g_playerHouseID);
-
-			if (g_campaignID == 9) {
-				GUI_Mouse_Hide_Safe();
-
-				GUI_SetPaletteAnimated(g_palette2, 15);
-				GUI_ClearScreen(0);
-				GameLoop_GameEndAnimation();
-				PrepareEnd();
-				exit(0);
-			}
-
-			GUI_Mouse_Hide_Safe();
-			GameLoop_LevelEndAnimation();
-			GUI_Mouse_Show_Safe();
-
-			File_ReadBlockFile("IBM.PAL", g_palette1, 256 * 3);
-
-			g_scenarioID = GUI_StrategicMap_Show(g_campaignID, true);
-
-			GUI_SetPaletteAnimated(g_palette2, 15);
-
-			if (g_campaignID == 1 || g_campaignID == 7) {
-				if (!GUI_Security_Show()) {
-					PrepareEnd();
-					exit(0);
-				}
-			}
 		} else {
 			Sound_Output_Feedback(41);
 
@@ -1846,7 +1848,7 @@ static void GameLoop_GameIntroAnimationMenu()
 
 	GUI_Mouse_Show_Safe();
 	jlog(1005);
-	g_debugSkipDialogs = true;
+
 	if (!g_debugSkipDialogs) {
 		uint16 stringID;
 		uint16 maxWidth;
@@ -2150,8 +2152,8 @@ static void LoopMain() {
 	static uint32 l_timerUnitStatus = 0;
 	static int16  l_selectionState = -2;
 
-	if (isAsyncPending()) {
-		AsyncLoop();
+	if (Async_IsPending()) {
+		Async_Loop();
 		return;
 	}
 

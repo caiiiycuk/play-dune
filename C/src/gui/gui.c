@@ -858,7 +858,7 @@ uint16 GUI_DisplayModalMessage(char *str, uint16 spriteID, ...)
 	vsnprintf(asyncModalMessage.textBuffer, sizeof(asyncModalMessage.textBuffer), str, ap);
 	va_end(ap);
 
-	AsyncInvokeWhile(
+	Async_InvokeInLoop(
 			async_DisplayModalMessageOpen,
 			async_DisplayModalMessageCondition,
 			async_DisplayModalMessageLoop,
@@ -2834,7 +2834,7 @@ void Async_DisplayFactoryWindow(bool isConstructionYard, bool isStarPort, uint16
 	asyncDisplayFactoryWindow.upgradeCost = upgradeCost;
 	asyncDisplayFactoryWindow.callback = callback;
 
-	AsyncInvokeWhile(
+	Async_InvokeInLoop(
 		async_DisplayFactoryWindowOpen,
 		async_DisplayFactoryWindowCondition,
 		async_DisplayFactoryWindowLoop,

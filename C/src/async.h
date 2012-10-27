@@ -10,8 +10,10 @@
 
 #include "types.h"
 
-extern void AsyncInvokeWhile(void (*open)(), bool (*condition)(), void (*loop)(), void (*close)());
-extern bool isAsyncPending();
-extern void AsyncLoop();
+extern void	Async_InvokeInLoop(void (*open)(), bool (*condition)(), void (*loop)(), void (*close)());
+extern void	Async_InvokeAfterNextLoop(void (*callback)());
+extern bool		Async_IsPending();
+extern void 	Async_Loop();
+
 
 #endif /* ASYNC_H_ */
