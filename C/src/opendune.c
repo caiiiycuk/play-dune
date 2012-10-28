@@ -85,7 +85,7 @@ static uint32 s_tickGameTimeout = 0; /*!< The tick the game will timeout. */
 
 bool   g_debugGame = true;        /*!< When true, you can control the AI. */
 bool   g_debugScenario = false;    /*!< When true, you can review the scenario. There is no fog. The game is not running (no unit-movement, no structure-building, etc). You can click on individual tiles. */
-bool   g_debugSkipDialogs = true; /*!< When non-zero, you immediately go to house selection, and skip all intros. */
+bool   g_debugSkipDialogs = false; /*!< When non-zero, you immediately go to house selection, and skip all intros. */
 
 void *g_readBuffer = NULL;
 uint32 g_readBufferSize = 0;
@@ -1162,16 +1162,22 @@ static void GameLoop_GameEndAnimation()
 	GameLoop_GameCredits();
 }
 
-static void GameLoop_WonLevelEnd() {
-	GUI_Mentat_ShowWin();
+static void GameLoop_WonLevelNextLevel() {
+	GUI_SetPaletteAnimated(g_palette2, 15);
 
-	Sound_Output_Feedback(40);
-	Sprites_UnloadTiles();
+	/*if (g_campaignID == 1 || g_campaignID == 7) {
+		GUI_Security_Show();
+	} */
 
-	g_campaignID++;
+	g_playerHouse->flags.doneFullScaleAttack = false;
 
-	GUI_EndStats_Show(g_scenario.killedAllied, g_scenario.killedEnemy, g_scenario.destroyedAllied, g_scenario.destroyedEnemy, g_scenario.harvestedAllied, g_scenario.harvestedEnemy, g_scenario.score, g_playerHouseID);
+	Sprites_LoadTiles();
 
+	g_gameMode = GM_RESTART;
+	s_debugForceWin = true;
+}
+
+static void GameLoop_WonLevelEndAnimation() {
 	if (g_campaignID == 9) {
 		GUI_Mouse_Hide_Safe();
 
@@ -1188,16 +1194,24 @@ static void GameLoop_WonLevelEnd() {
 
 	File_ReadBlockFile("IBM.PAL", g_palette1, 256 * 3);
 
-	g_scenarioID = GUI_StrategicMap_Show(g_campaignID, true);
+	Async_GUI_StrategicMap_Show(g_campaignID, true);
+	Async_Storage_uint16(&g_scenarioID);
+	Async_InvokeAfterAsync(GameLoop_WonLevelNextLevel);
+}
 
-	GUI_SetPaletteAnimated(g_palette2, 15);
+static void GameLoop_WonLevelEndStats() {
+	Sound_Output_Feedback(40);
+	Sprites_UnloadTiles();
 
-	if (g_campaignID == 1 || g_campaignID == 7) {
-		if (!GUI_Security_Show()) {
-			PrepareEnd();
-			exit(0);
-		}
-	}
+	g_campaignID++;
+
+	Async_GUI_EndStats_Show(g_scenario.killedAllied, g_scenario.killedEnemy, g_scenario.destroyedAllied, g_scenario.destroyedEnemy, g_scenario.harvestedAllied, g_scenario.harvestedEnemy, g_scenario.score, g_playerHouseID);
+	Async_InvokeAfterAsync(GameLoop_WonLevelEndAnimation);
+}
+
+static void GameLoop_WonLevelEnd() {
+	Async_GUI_Mentat_ShowWin();
+	Async_InvokeAfterAsync(GameLoop_WonLevelEndStats);
 }
 
 /**
@@ -1222,26 +1236,28 @@ static void GameLoop_LevelEnd()
 		GUI_ChangeSelectionType(SELECTIONTYPE_MENTAT);
 
 		if (GameLoop_IsLevelWon()) {
-			Async_InvokeAfterNextLoop(GameLoop_WonLevelEnd);
-			GUI_DisplayModalMessage(String_Get_ByIndex(STR_YOU_HAVE_SUCCESSFULLY_COMPLETED_YOUR_MISSION), 0xFFFF);
+			Async_GUI_DisplayModalMessage(String_Get_ByIndex(STR_YOU_HAVE_SUCCESSFULLY_COMPLETED_YOUR_MISSION), 0xFFFF);
+			Async_InvokeAfterAsync(GameLoop_WonLevelEnd);
 		} else {
+			/*FIXME: */
+			abort();
 			Sound_Output_Feedback(41);
 
-			GUI_DisplayModalMessage(String_Get_ByIndex(STR_YOU_HAVE_FAILED_YOUR_MISSION), 0xFFFF);
+			Async_GUI_DisplayModalMessage(String_Get_ByIndex(STR_YOU_HAVE_FAILED_YOUR_MISSION), 0xFFFF);
 
 			GUI_Mentat_ShowLose();
 
 			Sprites_UnloadTiles();
 
-			g_scenarioID = GUI_StrategicMap_Show(g_campaignID, false);
+			/*g_scenarioID = GUI_StrategicMap_Show(g_campaignID, false);*/
+
+			g_playerHouse->flags.doneFullScaleAttack = false;
+
+			Sprites_LoadTiles();
+
+			g_gameMode = GM_RESTART;
+			s_debugForceWin = false;
 		}
-
-		g_playerHouse->flags.doneFullScaleAttack = false;
-
-		Sprites_LoadTiles();
-
-		g_gameMode = GM_RESTART;
-		s_debugForceWin = false;
 	}
 
 	levelEndTimer = g_timerGame + 300;
@@ -1849,7 +1865,7 @@ static void GameLoop_GameIntroAnimationMenu()
 	GUI_Mouse_Show_Safe();
 	jlog(1005);
 
-	if (!g_debugSkipDialogs) {
+	if (!g_debugSkipDialogs && false) {
 		uint16 stringID;
 		uint16 maxWidth;
 		bool hasSave;
@@ -2065,7 +2081,11 @@ static void GameLoop_GameIntroAnimationMenu()
 
 		GUI_Mouse_Show_Safe();
 
-		if (g_campaignID != 0) g_scenarioID = GUI_StrategicMap_Show(g_campaignID, true);
+		if (g_campaignID != 0) {
+			/*g_scenarioID = GUI_StrategicMap_Show(g_campaignID, true);*/
+			/* FIXME: abort() */
+			abort();
+		}
 
 		Game_LoadScenario(g_playerHouseID, g_scenarioID);
 		if (!g_debugScenario && !g_debugSkipDialogs) GUI_Mentat_ShowBriefing();
@@ -2147,6 +2167,14 @@ static void InGame_Numpad_Move(uint16 key)
 
 static uint16 key;
 
+void switchToNormalGameAfterRestart() {
+	g_gameMode = GM_NORMAL;
+
+	GUI_ChangeSelectionType(SELECTIONTYPE_STRUCTURE);
+
+	Music_Play(Tools_RandomRange(0, 8) + 8);
+}
+
 static void LoopMain() {
 	static uint32 l_timerNext = 0;
 	static uint32 l_timerUnitStatus = 0;
@@ -2188,17 +2216,17 @@ static void LoopMain() {
 	GUI_PaletteAnimate();
 
 	if (g_gameMode == GM_RESTART) {
-		GUI_ChangeSelectionType(SELECTIONTYPE_MENTAT);
-
-		Game_LoadScenario(g_playerHouseID, g_scenarioID);
-		if (!g_debugScenario && !g_debugSkipDialogs) GUI_Mentat_ShowBriefing();
-
-		g_gameMode = GM_NORMAL;
-
-		GUI_ChangeSelectionType(SELECTIONTYPE_STRUCTURE);
-
-		Music_Play(Tools_RandomRange(0, 8) + 8);
 		l_timerNext = g_timerGUI + 300;
+
+		GUI_ChangeSelectionType(SELECTIONTYPE_MENTAT);
+		Game_LoadScenario(g_playerHouseID, g_scenarioID);
+		if (!g_debugScenario && !g_debugSkipDialogs) {
+			GUI_Mentat_ShowBriefing();
+			Async_InvokeAfterAsync(switchToNormalGameAfterRestart);
+			return;
+		} else {
+			switchToNormalGameAfterRestart();
+		}
 	}
 
 	if (l_selectionState != g_selectionState) {
@@ -2590,7 +2618,7 @@ void Game_LoadScenario(uint8 houseID, uint16 scenarioID)
 	g_var_38BC++;
 
 	if (!Scenario_Load(scenarioID, houseID)) {
-		GUI_DisplayModalMessage("No more scenarios!", 0xFFFF);
+		Async_GUI_DisplayModalMessage("No more scenarios!", 0xFFFF);
 
 		PrepareEnd();
 		exit(0);

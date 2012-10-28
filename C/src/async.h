@@ -10,10 +10,17 @@
 
 #include "types.h"
 
-extern void	Async_InvokeInLoop(void (*open)(), bool (*condition)(), void (*loop)(), void (*close)());
-extern void	Async_InvokeAfterNextLoop(void (*callback)());
+extern void async_noop();
+extern void async_false(bool *condition);
+
+extern void	Async_InvokeInLoop(void (*open)(), void (*condition)(bool* ref), void (*loop)(), void (*close)());
 extern bool		Async_IsPending();
 extern void 	Async_Loop();
+
+extern void	Async_InvokeAfterAsync(void (*callback)());
+
+extern void	Async_Storage_uint16(uint16* storage);
+extern void	Async_StorageSet_uint16(uint16 value);
 
 
 #endif /* ASYNC_H_ */

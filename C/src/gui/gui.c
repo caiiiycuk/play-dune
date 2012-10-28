@@ -802,9 +802,9 @@ void async_DisplayModalMessageOpen() {
 	Input_History_Clear();
 }
 
-bool async_DisplayModalMessageCondition() {
+void async_DisplayModalMessageCondition(bool *ref) {
 	uint16 ret = Input_GetValidInput();
-	return ret == 0 || (ret & 0x800) != 0;
+	*ref = ret == 0 || (ret & 0x800) != 0;
 }
 
 void async_DisplayModalMessageLoop() {
@@ -847,7 +847,7 @@ void async_DisplayModalMessageClose() {
  * @param ... The args for the text.
  * @return ??
  */
-uint16 GUI_DisplayModalMessage(char *str, uint16 spriteID, ...)
+uint16 Async_GUI_DisplayModalMessage(char *str, uint16 spriteID, ...)
 {
 	va_list ap;
 
@@ -1486,28 +1486,30 @@ static void GUI_HallOfFame_DrawBackground(uint16 score, bool hallOfFame)
 
 static void GUI_EndStats_Sleep(uint16 delay)
 {
-	g_timerTimeout = delay;
+/*	g_timerTimeout = delay;
 	while (g_timerTimeout != 0) {
 		GUI_HallOfFame_Tick();
 		sleepIdle();
-	}
+	} */
 }
 
-/**
- * Shows the stats at end of scenario.
- * @param killedAllied The amount of destroyed allied units.
- * @param killedEnemy The amount of destroyed enemy units.
- * @param destroyedAllied The amount of destroyed allied structures.
- * @param destroyedEnemy The amount of destroyed enemy structures.
- * @param harvestedAllied The amount of spice harvested by allies.
- * @param harvestedEnemy The amount of spice harvested by enemies.
- * @param score The base score.
- * @param houseID The houseID of the player.
- */
-void GUI_EndStats_Show(uint16 killedAllied, uint16 killedEnemy, uint16 destroyedAllied, uint16 destroyedEnemy, uint16 harvestedAllied, uint16 harvestedEnemy, int16 score, uint8 houseID)
-{
-	uint16 loc06;
+typedef struct AsyncEndStatsShow {
+	uint16 killedAllied;
+	uint16 killedEnemy;
+	uint16 destroyedAllied;
+	uint16 destroyedEnemy;
+	uint16 harvestedAllied;
+	uint16 harvestedEnemy;
+	int16 score;
+	uint8 houseID;
+
 	uint16 oldScreenID;
+} AsyncEndStatsShow;
+
+static AsyncEndStatsShow asyncEndStatsShow;
+
+void async_GUI_EndStats_ShowOpen() {
+	uint16 loc06;
 	uint16 loc16;
 	uint16 loc18;
 	uint16 loc1A;
@@ -1516,7 +1518,7 @@ void GUI_EndStats_Show(uint16 killedAllied, uint16 killedEnemy, uint16 destroyed
 
 	s_ticksPlayed = ((g_timerGame - g_tickScenarioStart) / 3600) + 1;
 
-	score = Update_Score(score, &harvestedAllied, &harvestedEnemy, houseID);
+	asyncEndStatsShow.score = Update_Score(asyncEndStatsShow.score, &asyncEndStatsShow.harvestedAllied, &asyncEndStatsShow.harvestedEnemy, asyncEndStatsShow.houseID);
 
 	loc16 = (g_scenarioID == 1) ? 2 : 3;
 
@@ -1524,9 +1526,9 @@ void GUI_EndStats_Show(uint16 killedAllied, uint16 killedEnemy, uint16 destroyed
 
 	GUI_ChangeSelectionType(SELECTIONTYPE_MENTAT);
 
-	oldScreenID = GFX_Screen_SetActive(2);
+	asyncEndStatsShow.oldScreenID = GFX_Screen_SetActive(2);
 
-	GUI_HallOfFame_DrawBackground(score, false);
+	GUI_HallOfFame_DrawBackground(asyncEndStatsShow.score, false);
 
 	GUI_DrawTextOnFilledRectangle(String_Get_ByIndex(STR_SPICE_HARVESTED_BY), 83);
 	GUI_DrawTextOnFilledRectangle(String_Get_ByIndex(STR_UNITS_DESTROYED_BY), 119);
@@ -1548,12 +1550,12 @@ void GUI_EndStats_Show(uint16 killedAllied, uint16 killedEnemy, uint16 destroyed
 
 	Input_History_Clear();
 
-	loc32[0][0][0] = harvestedAllied;
-	loc32[0][1][0] = harvestedEnemy;
-	loc32[1][0][0] = killedEnemy;
-	loc32[1][1][0] = killedAllied;
-	loc32[2][0][0] = destroyedEnemy;
-	loc32[2][1][0] = destroyedAllied;
+	loc32[0][0][0] = asyncEndStatsShow.harvestedAllied;
+	loc32[0][1][0] = asyncEndStatsShow.harvestedEnemy;
+	loc32[1][0][0] = asyncEndStatsShow.killedEnemy;
+	loc32[1][1][0] = asyncEndStatsShow.killedAllied;
+	loc32[2][0][0] = asyncEndStatsShow.destroyedEnemy;
+	loc32[2][1][0] = asyncEndStatsShow.destroyedAllied;
 
 	for (i = 0; i < loc16; i++) {
 		uint16 loc08 = loc32[i][0][0];
@@ -1572,7 +1574,7 @@ void GUI_EndStats_Show(uint16 killedAllied, uint16 killedEnemy, uint16 destroyed
 	}
 
 	GUI_EndStats_Sleep(45);
-	GUI_HallOfFame_DrawRank(score, true);
+	GUI_HallOfFame_DrawRank(asyncEndStatsShow.score, true);
 	GUI_EndStats_Sleep(45);
 
 	for (i = 0; i < loc16; i++) {
@@ -1637,22 +1639,57 @@ void GUI_EndStats_Show(uint16 killedAllied, uint16 killedEnemy, uint16 destroyed
 	GUI_Mouse_Show_Safe();
 
 	Input_History_Clear();
+}
 
-	while (true) {
-		GUI_HallOfFame_Tick();
-		if (Input_Keyboard_NextKey() != 0) break;
-		sleepIdle();
-	}
+void async_GUI_EndStats_ShowCondition(bool *condition) {
+	*condition = Input_Keyboard_NextKey() == 0;
+}
 
+void async_GUI_EndStats_ShowLoop() {
+	GUI_HallOfFame_Tick();
+	sleepIdle();
+}
+
+void async_GUI_EndStats_ShowClose() {
 	Input_History_Clear();
 
-	GUI_HallOfFame_Show(score);
+	/*GUI_HallOfFame_Show(score);*/
 
 	memset(g_palette1 + 255 * 3, 0, 3);
 
-	GFX_Screen_SetActive(oldScreenID);
+	GFX_Screen_SetActive(asyncEndStatsShow.oldScreenID);
 
 	Driver_Music_FadeOut();
+}
+
+
+/**
+ * Shows the stats at end of scenario.
+ * @param killedAllied The amount of destroyed allied units.
+ * @param killedEnemy The amount of destroyed enemy units.
+ * @param destroyedAllied The amount of destroyed allied structures.
+ * @param destroyedEnemy The amount of destroyed enemy structures.
+ * @param harvestedAllied The amount of spice harvested by allies.
+ * @param harvestedEnemy The amount of spice harvested by enemies.
+ * @param score The base score.
+ * @param houseID The houseID of the player.
+ */
+void Async_GUI_EndStats_Show(uint16 killedAllied, uint16 killedEnemy, uint16 destroyedAllied, uint16 destroyedEnemy, uint16 harvestedAllied, uint16 harvestedEnemy, int16 score, uint8 houseID)
+{
+	asyncEndStatsShow.killedAllied = killedAllied;
+	asyncEndStatsShow.killedEnemy = killedEnemy;
+	asyncEndStatsShow.destroyedAllied = destroyedAllied;
+	asyncEndStatsShow.destroyedEnemy = destroyedEnemy;
+	asyncEndStatsShow.harvestedAllied = harvestedAllied;
+	asyncEndStatsShow.harvestedEnemy = harvestedEnemy;
+	asyncEndStatsShow.score = score;
+	asyncEndStatsShow.houseID = houseID;
+
+	Async_InvokeInLoop(
+			async_GUI_EndStats_ShowOpen,
+			async_GUI_EndStats_ShowCondition,
+			async_GUI_EndStats_ShowLoop,
+			async_GUI_EndStats_ShowClose);
 }
 
 /**
@@ -1769,7 +1806,8 @@ uint8 GUI_PickHouse()
 		GUI_Mouse_Show_Safe();
 
 		while (true) {
-			yes_no = GUI_Mentat_Loop(House_GetWSAHouseFilename(houseID), NULL, NULL, true, w);
+			abort();
+			/*yes_no = GUI_Mentat_Loop(House_GetWSAHouseFilename(houseID), NULL, NULL, true, w, 0);*/
 
 			if ((yes_no & 0x8000) != 0) break;
 			sleepIdle();
@@ -1916,7 +1954,7 @@ uint16 GUI_DisplayHint(uint16 stringID, uint16 spriteID)
 	if ((*hintsShown & mask) != 0) return 0;
 	*hintsShown |= mask;
 
-	return GUI_DisplayModalMessage(String_Get_ByIndex(stringID), spriteID);
+	return Async_GUI_DisplayModalMessage(String_Get_ByIndex(stringID), spriteID);
 }
 
 void GUI_DrawProgressbar(uint16 current, uint16 max)
@@ -2680,7 +2718,7 @@ static void GUI_FactoryWindow_InitItems()
 	}
 
 	if (g_factoryWindowTotal == 0) {
-		GUI_DisplayModalMessage("ERROR: No items in construction list!", 0xFFFF);
+		Async_GUI_DisplayModalMessage("ERROR: No items in construction list!", 0xFFFF);
 		PrepareEnd();
 		exit(0);
 	}
@@ -2802,8 +2840,8 @@ void async_DisplayFactoryWindowClose() {
 }
 
 
-bool async_DisplayFactoryWindowCondition() {
-	return g_factoryWindowResult == FACTORY_CONTINUE;
+void async_DisplayFactoryWindowCondition(bool *ref) {
+	*ref = g_factoryWindowResult == FACTORY_CONTINUE;
 }
 
 void async_DisplayFactoryWindowLoop() {
@@ -2995,7 +3033,7 @@ static int16 GUI_StrategicMap_ClickedRegion()
 
 	if (Input_Keyboard_NextKey() == 0) return 0;
 
-	key = Input_WaitForValidInput();
+	key = Input_GetValidInput();
 	if (key != 0xC6 && key != 0xC7) return 0;
 
 	return g_fileRgnclkCPS[(g_mouseClickY - 24) * 304 + g_mouseClickX - 8];
@@ -3016,7 +3054,6 @@ static bool GUI_StrategicMap_FastForwardToggleWithESC()
 
 static void GUI_StrategicMap_DrawText(char *string)
 {
-	static uint32 l_timerNext = 0;
 	uint16 oldScreenID;
 	uint16 y;
 
@@ -3028,41 +3065,38 @@ static void GUI_StrategicMap_DrawText(char *string)
 
 	GUI_DrawText_Wrapper(string, 64, 175, 12, 0, 0x12);
 
-	while (g_timerGUI + 90 < l_timerNext) sleepIdle();
-
 	for (y = 185; y > 172; y--) {
 		GUI_Screen_Copy(8, y, 8, 165, 24, 14, 2, 0);
-
-		g_timerTimeout = 3;
-
-		while (g_timerTimeout != 0) {
-			if (GUI_StrategicMap_FastForwardToggleWithESC()) break;
-			sleepIdle();
-		}
 	}
 
-	l_timerNext = g_timerGUI + 90;
 
 	GFX_Screen_SetActive(oldScreenID);
 }
 
-static uint16 GUI_StrategicMap_ScenarioSelection(uint16 campaignID)
-{
+typedef struct AsyncStrategicMapScenarioSelection {
+	uint16 campaignID;
+
+	uint16 scenarioID;
+	bool loop;
+	uint16 region;
+	StrategicMapData data[20];
 	uint16 count;
+} AsyncStrategicMapScenarioSelection;
+
+static AsyncStrategicMapScenarioSelection asyncStrategicMapScenarioSelection;
+
+void async_GUI_StrategicMap_ScenarioSelectionOpen() {
 	char key[6];
-	bool loop = true;
 	bool loc12 = true;
 	char category[16];
-	StrategicMapData data[20];
-	uint16 scenarioID;
-	uint16 region;
+
 	uint16 i;
 
 	GUI_Palette_CreateRemap(g_playerHouseID);
 
-	sprintf(category, "GROUP%d", campaignID);
+	sprintf(category, "GROUP%d", asyncStrategicMapScenarioSelection.campaignID);
 
-	memset(data, 0, 20 * sizeof(StrategicMapData));
+	memset(asyncStrategicMapScenarioSelection.data, 0, 20 * sizeof(StrategicMapData));
 
 	for (i = 0; i < 20; i++) {
 		char buffer[81];
@@ -3071,71 +3105,98 @@ static uint16 GUI_StrategicMap_ScenarioSelection(uint16 campaignID)
 
 		if (Ini_GetString(category, key, NULL, buffer, sizeof(buffer) - 1, g_fileRegionINI) == NULL) break;
 
-		sscanf(buffer, "%hd,%hd,%hd,%hd", &data[i].index, &data[i].arrow, &data[i].offsetX, &data[i].offsetY);
+		sscanf(buffer, "%hd,%hd,%hd,%hd",
+				&asyncStrategicMapScenarioSelection.data[i].index,
+				&asyncStrategicMapScenarioSelection.data[i].arrow,
+				&asyncStrategicMapScenarioSelection.data[i].offsetX,
+				&asyncStrategicMapScenarioSelection.data[i].offsetY);
 
-		if (!GUI_StrategicMap_GetRegion(data[i].index)) loc12 = false;
+		if (!GUI_StrategicMap_GetRegion(asyncStrategicMapScenarioSelection.data[i].index)) loc12 = false;
 
-		GFX_Screen_Copy2(data[i].offsetX, data[i].offsetY, i * 16, 152, 16, 16, 2, 2, false);
-		GFX_Screen_Copy2(data[i].offsetX, data[i].offsetY, i * 16, 0, 16, 16, 2, 2, false);
-		GUI_DrawSprite(2, g_sprites[505 + data[i].arrow], i * 16, 152, 0, 0x100, g_remap, 1);
+		GFX_Screen_Copy2(asyncStrategicMapScenarioSelection.data[i].offsetX,
+				asyncStrategicMapScenarioSelection.data[i].offsetY, i * 16, 152, 16, 16, 2, 2, false);
+		GFX_Screen_Copy2(asyncStrategicMapScenarioSelection.data[i].offsetX,
+				asyncStrategicMapScenarioSelection.data[i].offsetY, i * 16, 0, 16, 16, 2, 2, false);
+		GUI_DrawSprite(2, g_sprites[505 + asyncStrategicMapScenarioSelection.data[i].arrow], i * 16, 152, 0, 0x100, g_remap, 1);
 	}
 
-	count = i;
+	asyncStrategicMapScenarioSelection.count = i;
 
 	if (loc12) {
-		for (i = 0; i < count; i++) {
-			GUI_StrategicMap_SetRegion(data[i].index, false);
+		for (i = 0; i < asyncStrategicMapScenarioSelection.count; i++) {
+			GUI_StrategicMap_SetRegion(asyncStrategicMapScenarioSelection.data[i].index, false);
 		}
 	} else {
-		for (i = 0; i < count; i++) {
-			if (GUI_StrategicMap_GetRegion(data[i].index)) data[i].index = 0;
+		for (i = 0; i < asyncStrategicMapScenarioSelection.count; i++) {
+			if (GUI_StrategicMap_GetRegion(asyncStrategicMapScenarioSelection.data[i].index)) asyncStrategicMapScenarioSelection.data[i].index = 0;
 		}
 	}
 
 	GUI_Mouse_Hide_Safe();
 
-	for (i = 0; i < count; i++) {
-		if (data[i].index == 0) continue;
+	for (i = 0; i < asyncStrategicMapScenarioSelection.count; i++) {
+		if (asyncStrategicMapScenarioSelection.data[i].index == 0) continue;
 
-		GFX_Screen_Copy2(i * 16, 152, data[i].offsetX, data[i].offsetY, 16, 16, 2, 0, false);
+		GFX_Screen_Copy2(i * 16, 152, asyncStrategicMapScenarioSelection.data[i].offsetX, asyncStrategicMapScenarioSelection.data[i].offsetY, 16, 16, 2, 0, false);
 	}
 
 	GUI_Mouse_Show_Safe();
 	Input_History_Clear();
+}
 
-	while (loop) {
-		region = GUI_StrategicMap_ClickedRegion();
+void async_GUI_StrategicMap_ScenarioSelectionCondition(bool *condition) {
+	*condition = asyncStrategicMapScenarioSelection.loop;
+}
 
-		if (region == 0) {
-			sleepIdle();
-			continue;
-		}
+void async_GUI_StrategicMap_ScenarioSelectionLoop() {
+	uint16 i;
 
-		for (i = 0; i < count; i++) {
-			GUI_StrategicMap_AnimateArrows();
+	asyncStrategicMapScenarioSelection.region = GUI_StrategicMap_ClickedRegion();
 
-			if (data[i].index == region) {
-				loop = false;
-				scenarioID = i;
-				break;
-			}
-		}
-
+	if (asyncStrategicMapScenarioSelection.region == 0) {
 		sleepIdle();
+		return;
 	}
 
-	GUI_StrategicMap_SetRegion(region, true);
+	for (i = 0; i < asyncStrategicMapScenarioSelection.count; i++) {
+		GUI_StrategicMap_AnimateArrows();
+
+		if (asyncStrategicMapScenarioSelection.data[i].index == asyncStrategicMapScenarioSelection.region) {
+			asyncStrategicMapScenarioSelection.loop = false;
+			asyncStrategicMapScenarioSelection.scenarioID = i;
+			return;
+		}
+	}
+
+	sleepIdle();
+}
+
+void async_GUI_StrategicMap_ScenarioSelectionClose() {
+
+	GUI_StrategicMap_SetRegion(asyncStrategicMapScenarioSelection.region, true);
 
 	GUI_StrategicMap_DrawText("");
 
-	GUI_StrategicMap_AnimateSelected(region, data);
+	/*GUI_StrategicMap_AnimateSelected(asyncStrategicMapScenarioSelection.region, asyncStrategicMapScenarioSelection.data);*/
 
-	scenarioID += (campaignID - 1) * 3 + 2;
+	asyncStrategicMapScenarioSelection.scenarioID += (asyncStrategicMapScenarioSelection.campaignID - 1) * 3 + 2;
 
-	if (campaignID > 7) scenarioID--;
-	if (campaignID > 8) scenarioID--;
+	if (asyncStrategicMapScenarioSelection.campaignID > 7) asyncStrategicMapScenarioSelection.scenarioID--;
+	if (asyncStrategicMapScenarioSelection.campaignID > 8) asyncStrategicMapScenarioSelection.scenarioID--;
 
-	return scenarioID;
+	Async_StorageSet_uint16(asyncStrategicMapScenarioSelection.scenarioID);
+}
+
+static void Async_GUI_StrategicMap_ScenarioSelection(uint16 campaignID)
+{
+	asyncStrategicMapScenarioSelection.campaignID = campaignID;
+	asyncStrategicMapScenarioSelection.loop = true;
+
+	Async_InvokeInLoop(
+			async_GUI_StrategicMap_ScenarioSelectionOpen,
+			async_GUI_StrategicMap_ScenarioSelectionCondition,
+			async_GUI_StrategicMap_ScenarioSelectionLoop,
+			async_GUI_StrategicMap_ScenarioSelectionClose);
 }
 
 static void GUI_StrategicMap_ReadHouseRegions(uint8 houseID, uint16 campaignID)
@@ -3187,6 +3248,7 @@ static void GUI_StrategicMap_DrawRegion(uint8 houseId, uint16 region, bool progr
 	GUI_Screen_FadeIn2(x + 8, y + 24, Sprite_GetWidth(sprite), Sprite_GetHeight(sprite), 2, 0, GUI_StrategicMap_FastForwardToggleWithESC() ? 0 : 1, false);
 }
 
+
 static void GUI_StrategicMap_PrepareRegions(uint16 campaignID)
 {
 	uint16 i;
@@ -3198,10 +3260,13 @@ static void GUI_StrategicMap_PrepareRegions(uint16 campaignID)
 		GUI_StrategicMap_ReadHouseRegions(HOUSE_SARDAUKAR, i + 1);
 	}
 
-	for (i = 0; i < g_regions[0]; i++) {
-		if (g_regions[i + 1] == 0xFFFF) continue;
-
-		GUI_StrategicMap_DrawRegion((uint8)g_regions[i + 1], i + 1, false);
+	i = 0;
+	while (i < g_regions[0]) {
+		if (g_regions[i + 1] != 0xFFFF) {
+			GUI_StrategicMap_DrawRegion((uint8)g_regions[i + 1], i + 1, false);
+		}
+		i++;
+		sleepIdle();
 	}
 }
 
@@ -3247,27 +3312,39 @@ static void GUI_StrategicMap_ShowProgression(uint16 campaignID)
 	GUI_StrategicMap_DrawText("");
 }
 
-uint16 GUI_StrategicMap_Show(uint16 campaignID, bool win)
-{
+typedef struct AsyncStrategicMapShow {
+	uint16 campaignID;
+	bool win;
+
 	uint16 scenarioID;
 	uint16 previousCampaignID;
-	uint16 x;
-	uint16 y;
 	uint16 oldScreenID;
+
 	uint8 palette[3 * 256];
 	uint8 loc316[12];
+} AsyncStrategicMapShow;
 
-	if (campaignID == 0) return 1;
+static AsyncStrategicMapShow asyncStrategicMapShow;
+
+void async_GUI_Strategic_Map_ShowOpen() {
+	uint16 x;
+	uint16 y;
+
+	if (asyncStrategicMapShow.campaignID == 0) {
+	/*	return 1;*/
+		abort();
+		/* ???*/
+	}
 
 	Timer_Sleep(10);
 	Music_Play(0x1D);
 
-	memset(palette, 0, 256 * 3);
+	memset(asyncStrategicMapShow.palette, 0, 256 * 3);
 
-	previousCampaignID = campaignID - (win ? 1 : 0);
-	oldScreenID = GFX_Screen_SetActive(4);
+	asyncStrategicMapShow.previousCampaignID = asyncStrategicMapShow.campaignID - (asyncStrategicMapShow.win ? 1 : 0);
+	asyncStrategicMapShow.oldScreenID = GFX_Screen_SetActive(4);
 
-	GUI_SetPaletteAnimated(palette, 15);
+	GUI_SetPaletteAnimated(asyncStrategicMapShow.palette, 15);
 
 	Mouse_SetRegion(8, 24, 311, 143);
 
@@ -3297,7 +3374,7 @@ uint16 GUI_StrategicMap_Show(uint16 campaignID, bool win)
 			break;
 	}
 
-	memcpy(loc316, g_palette1 + 251 * 3, 12);
+	memcpy(asyncStrategicMapShow.loc316, g_palette1 + 251 * 3, 12);
 	memcpy(s_var_81BA, g_palette1 + (144 + (g_playerHouseID * 16)) * 3, 4 * 3);
 	memcpy(s_var_81BA + 4 * 3, s_var_81BA, 4 * 3);
 
@@ -3325,7 +3402,7 @@ uint16 GUI_StrategicMap_Show(uint16 campaignID, bool win)
 
 	s_strategicMapFastForward = false;
 
-	if (win && campaignID == 1) {
+	if (asyncStrategicMapShow.win && asyncStrategicMapShow.campaignID == 1 && false) {
 		Sprites_LoadImage("PLANET.CPS", 3, g_palette_998A);
 
 		GUI_StrategicMap_DrawText(String_Get_ByIndex(STR_THREE_HOUSES_HAVE_COME_TO_DUNE));
@@ -3365,7 +3442,7 @@ uint16 GUI_StrategicMap_Show(uint16 campaignID, bool win)
 
 	GFX_Screen_SetActive(2);
 
-	GUI_StrategicMap_PrepareRegions(previousCampaignID);
+	GUI_StrategicMap_PrepareRegions(asyncStrategicMapShow.previousCampaignID);
 
 	if (GUI_StrategicMap_FastForwardToggleWithESC()) {
 		GUI_Screen_Copy(1, 24, 1, 24, 38, 120, 2, 0);
@@ -3375,29 +3452,34 @@ uint16 GUI_StrategicMap_Show(uint16 campaignID, bool win)
 
 	GUI_Screen_Copy(0, 0, 0, 0, SCREEN_WIDTH / 8, SCREEN_HEIGHT, 0, 2);
 
-	if (campaignID != previousCampaignID) GUI_StrategicMap_ShowProgression(campaignID);
+	if (asyncStrategicMapShow.campaignID != asyncStrategicMapShow.previousCampaignID) {
+		GUI_StrategicMap_ShowProgression(asyncStrategicMapShow.campaignID);
+	}
 
 	GUI_Mouse_Show_Safe();
 
-	if (*g_regions >= campaignID) {
+	if (*g_regions >= asyncStrategicMapShow.campaignID) {
 		GUI_StrategicMap_DrawText(String_Get_ByIndex(STR_SELECT_YOUR_NEXT_REGION));
 
-		scenarioID = GUI_StrategicMap_ScenarioSelection(campaignID);
+		Async_GUI_StrategicMap_ScenarioSelection(asyncStrategicMapShow.campaignID);
+		Async_Storage_uint16(&asyncStrategicMapShow.scenarioID);
 	} else {
-		scenarioID = 0;
+		asyncStrategicMapShow.scenarioID = 0;
 	}
+}
 
+void async_GUI_StrategicMap_ShowClose() {
 	Driver_Music_FadeOut();
 
-	GFX_Screen_SetActive(oldScreenID);
+	GFX_Screen_SetActive(asyncStrategicMapShow.oldScreenID);
 
 	Mouse_SetRegion(0, 0, SCREEN_WIDTH - 1, SCREEN_HEIGHT - 1);
 
 	Input_History_Clear();
 
-	memcpy(g_palette1 + 251 * 3, loc316, 12);
+	memcpy(g_palette1 + 251 * 3, asyncStrategicMapShow.loc316, 12);
 
-	GUI_SetPaletteAnimated(palette, 15);
+	GUI_SetPaletteAnimated(asyncStrategicMapShow.palette, 15);
 
 	GUI_Mouse_Hide_Safe();
 	GUI_ClearScreen(0);
@@ -3405,7 +3487,19 @@ uint16 GUI_StrategicMap_Show(uint16 campaignID, bool win)
 
 	GFX_SetPalette(g_palette1);
 
-	return scenarioID;
+	Async_StorageSet_uint16(asyncStrategicMapShow.scenarioID);
+}
+
+void Async_GUI_StrategicMap_Show(uint16 campaignID, bool win)
+{
+	asyncStrategicMapShow.campaignID = campaignID;
+	asyncStrategicMapShow.win = win;
+
+	Async_InvokeInLoop(
+			async_GUI_Strategic_Map_ShowOpen,
+			async_false,
+			async_noop,
+			async_GUI_StrategicMap_ShowClose);
 }
 
 /**
@@ -3804,7 +3898,7 @@ void GUI_Screen_FadeIn2(int16 x, int16 y, int16 width, int16 height, uint16 scre
 
 	for (j = 0; j < height; j++) {
 		uint16 j2 = j;
-		uint32 tick;
+		/* uint32 tick; */
 
 		for (i = 0; i < width; i++) {
 			uint8 colour;
@@ -3824,9 +3918,10 @@ void GUI_Screen_FadeIn2(int16 x, int16 y, int16 width, int16 height, uint16 scre
 			GFX_PutPixel(curX, curY, colour);
 		}
 
-		tick = g_timerSleep + delay;
-
-		while (g_timerSleep < tick) sleepIdle();
+		/*
+		 * tick = g_timerSleep + delay;
+		   while (g_timerSleep < tick) sleepIdle();
+		 */
 	}
 
 	if (screenDst == 0) {

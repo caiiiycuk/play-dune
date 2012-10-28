@@ -1,98 +1,152 @@
 #include "async.h"
 #include "stdlib.h"
 
+#define ScheduledAsync_OPEN 		1
+#define ScheduledAsync_CONDITION 	2
+#define ScheduledAsync_LOOP 		4
+#define ScheduledAsync_CLOSE 		8
+
 typedef struct ScheduledAsync {
 	void	(*	open)();
-	bool	(*	condition)();
+	void	(*	condition)(bool *ref);
 	void	(*	loop)();
 	void	(*	close)();
-	bool	firstRun;
-	void	(*	after)();
+
+	void	(*	closeHandler)();
+
+	bool	conditionValue;
+	int		state;
+
+	struct ScheduledAsync *next;
 } ScheduledAsync;
 
-#define 		MAX_SCHEDULED_COUNT 5
-ScheduledAsync 	scheduled[MAX_SCHEDULED_COUNT];
-int 			scheduledCount = 0;
-void			(*scheduledAfter)() = 0;
+ScheduledAsync *STACK_TOP = 0;
 
-void pushAsync(void (*open)(), bool (*condition)(), void (*loop)(), void (*close)()) {
-	int index = scheduledCount;
-	++scheduledCount;
+void pushStack(void (*open)(), void (*condition)(bool *ref), void (*loop)(), void (*close)()) {
+	ScheduledAsync *async;
+	async = malloc(sizeof(ScheduledAsync));
 
-	if (scheduledCount > MAX_SCHEDULED_COUNT) {
+	async->open = open;
+	async->condition = condition;
+	async->loop = loop;
+	async->close = close;
+
+	async->closeHandler = 0;
+
+	async->state = ScheduledAsync_OPEN;
+	async->conditionValue = false;
+	async->next = STACK_TOP;
+
+	STACK_TOP = async;
+}
+
+void popStack() {
+	ScheduledAsync *async;
+
+	if (!STACK_TOP) {
+		return;
+	}
+
+	async = STACK_TOP;
+	STACK_TOP = async->next;
+}
+
+void Async_InvokeInLoop(void (*open)(), void (*condition)(bool *ref), void (*loop)(), void (*close)()) {
+	pushStack(open, condition, loop, close);
+}
+
+void Async_InvokeAfterAsync(void (*callback)()) {
+	if (!STACK_TOP) {
 		abort();
 	}
 
-	scheduled[index].open = open;
-	scheduled[index].condition = condition;
-	scheduled[index].loop = loop;
-	scheduled[index].close = close;
-	scheduled[index].firstRun = true;
-	scheduled[index].after = scheduledAfter;
-
-	scheduledAfter = 0;
-}
-
-ScheduledAsync* touchAsync() {
-	if (scheduledCount == 0) {
-		abort();
-	}
-
-	return &scheduled[0];
-}
-
-void popAsync() {
-	int first;
-	int second;
-
-	for (second = 1; second<scheduledCount; ++second) {
-		first = second - 1;
-
-		scheduled[first].open 		= scheduled[second].open;
-		scheduled[first].condition 	= scheduled[second].condition;
-		scheduled[first].loop 		= scheduled[second].loop;
-		scheduled[first].close 		= scheduled[second].close;
-		scheduled[first].firstRun 	= scheduled[second].firstRun;
-		scheduled[first].after 		= scheduled[second].after;
-	}
-
-	--scheduledCount;
-}
-
-void Async_InvokeInLoop(void (*open)(), bool (*condition)(), void (*loop)(), void (*close)()) {
-	pushAsync(open, condition, loop, close);
-}
-
-void Async_InvokeAfterNextLoop(void (*callback)()) {
-	if (scheduledAfter) {
-		abort();
-	}
-
-	scheduledAfter = callback;
+	STACK_TOP->closeHandler = callback;
 }
 
 bool Async_IsPending() {
-	return scheduledCount > 0;
+	return STACK_TOP != 0;
 }
 
 void Async_Loop() {
-	ScheduledAsync* async = touchAsync();
+	ScheduledAsync *top = STACK_TOP;
 
-	if (async->firstRun) {
-		async->open();
-		async->firstRun = false;
-	}
+	switch (top->state) {
+		case ScheduledAsync_OPEN: {
+			top->open();
+			top->state = ScheduledAsync_CONDITION;
 
-	if (async->condition()) {
-		async->loop();
-	} else {
-		async->close();
-
-		if (async->after) {
-			async->after();
+			return;
 		}
 
-		popAsync();
+		case ScheduledAsync_CONDITION: {
+			top->condition(&top->conditionValue);
+			top->state = ScheduledAsync_LOOP;
+
+			return;
+		}
+
+		case ScheduledAsync_LOOP: {
+			if (top->conditionValue) {
+				top->loop();
+				top->state = ScheduledAsync_CONDITION;
+			} else {
+				top->state = ScheduledAsync_CLOSE;
+			}
+
+			return;
+		}
+
+		case ScheduledAsync_CLOSE: {
+			popStack();
+			top->close();
+
+			if (top->closeHandler) {
+				top->closeHandler();
+			}
+
+
+			free(top);
+			return;
+		}
+
+		default:
+			abort();
 	}
 }
+
+void async_noop() {
+}
+
+void async_false(bool *condition) {
+	*condition = false;
+}
+
+
+/* STORAGE */
+
+typedef struct StackStorage {
+	uint16* s_uint16;
+	struct StackStorage *next;
+} StackStorage;
+
+StackStorage *STACK_STORAGE = 0;
+
+
+uint16 *__uint16Storage = 0;
+
+void Async_Storage_uint16(uint16* s_uint16) {
+	StackStorage *storage = malloc(sizeof(StackStorage));
+
+	storage->s_uint16 = s_uint16;
+	storage->next = STACK_STORAGE;
+
+	STACK_STORAGE = storage;
+}
+
+void Async_StorageSet_uint16(uint16 value) {
+	*STACK_STORAGE->s_uint16 = value;
+	STACK_STORAGE = STACK_STORAGE->next;
+}
+
+
 

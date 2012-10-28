@@ -150,7 +150,7 @@ uint16 Script_General_DisplayModalMessage(ScriptEngine *script)
 	offset = BETOH16(*(script->scriptInfo->text + STACK_PEEK(1)));
 	text = (char *)script->scriptInfo->text + offset;
 
-	return GUI_DisplayModalMessage(text, 0xFFFF);
+	return Async_GUI_DisplayModalMessage(text, 0xFFFF);
 }
 
 /**
