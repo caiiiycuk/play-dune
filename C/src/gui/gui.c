@@ -1486,6 +1486,7 @@ static void GUI_HallOfFame_DrawBackground(uint16 score, bool hallOfFame)
 
 static void GUI_EndStats_Sleep(uint16 delay)
 {
+	(void) delay;
 /*	g_timerTimeout = delay;
 	while (g_timerTimeout != 0) {
 		GUI_HallOfFame_Tick();
@@ -1763,11 +1764,11 @@ uint8 GUI_PickHouse()
 
 		GUI_Mouse_Hide_Safe();
 
-		if (g_enableVoices != 0) {
+		/*if (g_enableVoices != 0) {
 			Sound_Output_Feedback(houseID + 62);
 
 			while (Sound_StartSpeech()) sleepIdle();
-		}
+		}*/
 
 		while (w != NULL) {
 			Widget *next = w->next;
@@ -1807,7 +1808,7 @@ uint8 GUI_PickHouse()
 
 		while (true) {
 			abort();
-			/*yes_no = GUI_Mentat_Loop(House_GetWSAHouseFilename(houseID), NULL, NULL, true, w, 0);*/
+			Async_GUI_Mentat_Loop(House_GetWSAHouseFilename(houseID), NULL, NULL, true, w);
 
 			if ((yes_no & 0x8000) != 0) break;
 			sleepIdle();
@@ -3326,7 +3327,45 @@ typedef struct AsyncStrategicMapShow {
 
 static AsyncStrategicMapShow asyncStrategicMapShow;
 
-void async_GUI_Strategic_Map_ShowOpen() {
+void async_GUI_Strategic_Map_ShowInner3Open() {
+	GUI_StrategicMap_DrawText(String_Get_ByIndex(STR_THAT_HAS_BECOME_DIVIDED));
+
+	g_timerTimeout = 60;
+}
+
+void async_GUI_Strategic_Map_ShowInner2Open() {
+	Sprites_LoadImage("DUNEMAP.CPS", 3 , g_palette_998A);
+
+	GUI_StrategicMap_DrawText(String_Get_ByIndex(STR_TO_TAKE_CONTROL_OF_THE_LAND));
+
+	GUI_Screen_FadeIn2(8, 24, 304, 120, 2, 0, GUI_StrategicMap_FastForwardToggleWithESC() ? 0 : 1, false);
+
+	g_timerTimeout = 60;
+}
+
+void async_GUI_Strategic_Map_ShowInner1Open() {
+	Sprites_LoadImage("PLANET.CPS", 3, g_palette_998A);
+
+	GUI_StrategicMap_DrawText(String_Get_ByIndex(STR_THREE_HOUSES_HAVE_COME_TO_DUNE));
+
+	GUI_Screen_FadeIn2(8, 24, 304, 120, 2, 0, 0, false);
+
+	Input_History_Clear();
+
+	g_timerTimeout = 120;
+
+	Sprites_CPS_LoadRegionClick();
+}
+
+void async_GUI_Strategic_Map_ShowInnerCondition(bool *ref) {
+	*ref = g_timerTimeout != 0;
+}
+
+void async_GUI_Strategic_Map_ShowInnerLoop() {
+	sleepIdle();
+}
+
+void async_GUI_Strategic_Map_ShowInnerOpen() {
 	uint16 x;
 	uint16 y;
 
@@ -3402,42 +3441,27 @@ void async_GUI_Strategic_Map_ShowOpen() {
 
 	s_strategicMapFastForward = false;
 
-	if (asyncStrategicMapShow.win && asyncStrategicMapShow.campaignID == 1 && false) {
-		Sprites_LoadImage("PLANET.CPS", 3, g_palette_998A);
+	if (asyncStrategicMapShow.win && asyncStrategicMapShow.campaignID == 1) {
+		Async_InvokeInLoop(async_GUI_Strategic_Map_ShowInner3Open,
+						async_GUI_Strategic_Map_ShowInnerCondition,
+						async_GUI_Strategic_Map_ShowInnerLoop,
+						async_noop);
 
-		GUI_StrategicMap_DrawText(String_Get_ByIndex(STR_THREE_HOUSES_HAVE_COME_TO_DUNE));
+		Async_InvokeInLoop(async_GUI_Strategic_Map_ShowInner2Open,
+				async_GUI_Strategic_Map_ShowInnerCondition,
+				async_GUI_Strategic_Map_ShowInnerLoop,
+				async_noop);
 
-		GUI_Screen_FadeIn2(8, 24, 304, 120, 2, 0, 0, false);
-
-		Input_History_Clear();
-
-		g_timerTimeout = 120;
-
-		Sprites_CPS_LoadRegionClick();
-
-		while (g_timerTimeout != 0) {
-			if (GUI_StrategicMap_FastForwardToggleWithESC()) break;
-			sleepIdle();
-		}
-
-		Sprites_LoadImage("DUNEMAP.CPS", 3 , g_palette_998A);
-
-		GUI_StrategicMap_DrawText(String_Get_ByIndex(STR_TO_TAKE_CONTROL_OF_THE_LAND));
-
-		GUI_Screen_FadeIn2(8, 24, 304, 120, 2, 0, GUI_StrategicMap_FastForwardToggleWithESC() ? 0 : 1, false);
-
-		g_timerTimeout = 60;
-
-		while (g_timerTimeout != 0) {
-			if (GUI_StrategicMap_FastForwardToggleWithESC()) break;
-			sleepIdle();
-		}
-
-		GUI_StrategicMap_DrawText(String_Get_ByIndex(STR_THAT_HAS_BECOME_DIVIDED));
+		Async_InvokeInLoop(async_GUI_Strategic_Map_ShowInner1Open,
+				async_GUI_Strategic_Map_ShowInnerCondition,
+				async_GUI_Strategic_Map_ShowInnerLoop,
+				async_noop);
 	} else {
 		Sprites_CPS_LoadRegionClick();
 	}
+}
 
+void async_GUI_Strategic_Map_ShowInnerClose() {
 	Sprites_LoadImage("DUNERGN.CPS", 3, g_palette_998A);
 
 	GFX_Screen_SetActive(2);
@@ -3466,6 +3490,13 @@ void async_GUI_Strategic_Map_ShowOpen() {
 	} else {
 		asyncStrategicMapShow.scenarioID = 0;
 	}
+}
+
+void async_GUI_Strategic_Map_ShowOpen() {
+	Async_InvokeInLoop(async_GUI_Strategic_Map_ShowInnerOpen,
+			async_false,
+			async_noop,
+			async_GUI_Strategic_Map_ShowInnerClose);
 }
 
 void async_GUI_StrategicMap_ShowClose() {

@@ -1339,7 +1339,7 @@ static void GameLoop_WonLevelEndShowStrategicMap() {
 }
 
 static void GameLoop_WonLevelEndAnimation() {
-	if (true || g_campaignID == 9) {
+	if (g_campaignID == 9) {
 		GUI_Mouse_Hide_Safe();
 
 		GUI_SetPaletteAnimated(g_palette2, 15);
@@ -1924,6 +1924,11 @@ static void ReadProfileIni(char *filename)
 /**
  * Intro menu.
  */
+static void async_GameLoopIntroDone() {
+	GUI_ChangeSelectionType(g_debugScenario ? SELECTIONTYPE_DEBUG : SELECTIONTYPE_STRUCTURE);
+	GFX_SetPalette(g_palette1);
+}
+
 static void GameLoop_GameIntroAnimationMenu()
 {
 	static const uint16 mainMenuStrings[][6] = {
@@ -2218,7 +2223,7 @@ static void GameLoop_GameIntroAnimationMenu()
 	if (s_enableLog != 0) Mouse_SetMouseMode((uint8)s_enableLog, "DUNE.LOG");
 
 	if (!loc02) {
-		g_playerHouseID = HOUSE_HARKONNEN;
+		g_playerHouseID = HOUSE_ATREIDES;
 		if (g_playerHouseID == HOUSE_INVALID) {
 			GUI_Mouse_Show_Safe();
 
@@ -2244,13 +2249,9 @@ static void GameLoop_GameIntroAnimationMenu()
 
 		Game_LoadScenario(g_playerHouseID, g_scenarioID);
 		if (!g_debugScenario && !g_debugSkipDialogs) GUI_Mentat_ShowBriefing();
-
-		GUI_Mouse_Hide_Safe();
-
-		GUI_ChangeSelectionType(g_debugScenario ? SELECTIONTYPE_DEBUG : SELECTIONTYPE_STRUCTURE);
+		Async_InvokeAfterAsync(async_GameLoopIntroDone);
 	}
 
-	GFX_SetPalette(g_palette1);
 
 	return;
 }
