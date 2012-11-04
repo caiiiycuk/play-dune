@@ -83,7 +83,7 @@ uint16 g_activeAction = 0xFFFF;      /*!< Action the controlled unit will do. */
 uint32 g_tickScenarioStart = 0;      /*!< The tick the scenario started in. */
 static uint32 s_tickGameTimeout = 0; /*!< The tick the game will timeout. */
 
-bool   g_debugGame = true;        /*!< When true, you can control the AI. */
+bool   g_debugGame = false;        /*!< When true, you can control the AI. */
 bool   g_debugScenario = false;    /*!< When true, you can review the scenario. There is no fog. The game is not running (no unit-movement, no structure-building, etc). You can click on individual tiles. */
 bool   g_debugSkipDialogs = false; /*!< When non-zero, you immediately go to house selection, and skip all intros. */
 
@@ -114,7 +114,7 @@ static uint8                s_palettePartTarget[18];   /*!< Target palette part 
 static uint8                s_palettePartCurrent[18];  /*!< Current value of the palette part (6 colours, updated each call to #GameLoop_PalettePart_Update). */
 static uint8                s_palettePartChange[18];   /*!< Amount of change of each RGB colour of the palette part with each step. */
 
-static bool  s_debugForceWin = true; /*!< When true, you immediately win the level. */
+static bool  s_debugForceWin = false; /*!< When true, you immediately win the level. */
 
 static void *s_buffer_182E = NULL;
 static void *s_buffer_1832 = NULL;
@@ -1325,7 +1325,6 @@ static void GameLoop_WonLevelNextLevel() {
 	Sprites_LoadTiles();
 
 	g_gameMode = GM_RESTART;
-	s_debugForceWin = true;
 }
 
 static void GameLoop_WonLevelEndShowStrategicMap() {
