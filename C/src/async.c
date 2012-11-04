@@ -13,6 +13,7 @@ typedef struct ScheduledAsync {
 	void	(*	close)();
 
 	void	(*	closeHandler)();
+	void	(*	closeHandler2)();
 
 	bool	conditionValue;
 	int		state;
@@ -32,6 +33,7 @@ void pushStack(void (*open)(), void (*condition)(bool *ref), void (*loop)(), voi
 	async->close = close;
 
 	async->closeHandler = 0;
+	async->closeHandler2 = 0;
 
 	async->state = ScheduledAsync_OPEN;
 	async->conditionValue = false;
@@ -60,7 +62,21 @@ void Async_InvokeAfterAsync(void (*callback)()) {
 		abort();
 	}
 
-	STACK_TOP->closeHandler = callback;
+	if (!STACK_TOP->closeHandler) {
+		STACK_TOP->closeHandler = callback;
+	} else if (!STACK_TOP->closeHandler2) {
+		STACK_TOP->closeHandler2 = callback;
+	} else {
+		abort();
+	}
+}
+
+void Async_InvokeAfterAsyncOrNow(void (*callback)()) {
+	if (!STACK_TOP) {
+		callback();
+	} else {
+		Async_InvokeAfterAsync(callback);
+	}
 }
 
 bool Async_IsPending() {
@@ -104,6 +120,10 @@ void Async_Loop() {
 				top->closeHandler();
 			}
 
+			if (top->closeHandler2) {
+				top->closeHandler2();
+			}
+
 
 			free(top);
 			return;
@@ -119,6 +139,10 @@ void async_noop() {
 
 void async_false(bool *condition) {
 	*condition = false;
+}
+
+void async_true(bool *condition) {
+	*condition = true;
 }
 
 

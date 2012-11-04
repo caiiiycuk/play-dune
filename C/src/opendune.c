@@ -65,7 +65,7 @@
 #include <emscripten.h>
 extern void jlog(int);
 #else
-void jlog(int x) {}
+void jlog(int x) { (void) x; }
 #endif
 
 #include "async.h"
@@ -132,6 +132,8 @@ bool g_viewport_forceRedraw = false;
 bool g_var_3A14 = false;
 
 int16 g_musicInBattle = 0; /*!< 0 = no battle, 1 = fight is going on, -1 = music of fight is going on is active. */
+
+static void AsyncGameLoop_GameCredits();
 
 /**
  * Check if a level is finished, based on the values in WinFlags.
@@ -513,193 +515,305 @@ static uint16 GameLoop_PalettePart_Update(bool finishNow)
 	return s_palettePartDirection;
 }
 
-static void GameLoop_PlayAnimation()
-{
+typedef struct Async_GameLoop_PlayAnimation {
 	const HouseAnimation_Animation *animation;
-	uint8 animationMode = 0;
+	uint8 animationMode;
+} Async_GameLoop_PlayAnimation;
 
-	animation = s_houseAnimation_animation;
+typedef struct Async_GameLoop_PlayAnimationInner {
+	uint16 mode;
+	uint16 loc04;
+	uint32 loc18;
+	uint32 loc10;
+	uint32 loc14;
+	uint16 frame;
+	void *wsa;
+	uint16 posX;
+	uint16 posY;
+} Async_GameLoop_PlayAnimationInner;
 
-	while (animation->duration != 0) {
-		uint16 loc04;
-		uint16 posX = 0;
-		uint16 posY = 0;
-		uint32 loc10 = g_timerGUI + animation->duration * 6;
-		uint32 loc14 = loc10 + 30;
-		uint32 loc18;
-		uint32 loc1C;
-		uint16 mode = animation->flags & 0x3;
-		bool loc20;
-		uint32 loc24;
-		uint16 locdi;
-		uint16 frame;
-		void *wsa;
+static Async_GameLoop_PlayAnimation asyncGameLoop_PlayAnimation;
+static Async_GameLoop_PlayAnimationInner async_GameLoop_PlayAnimationInner;
 
-		if ((animation->flags & 0x20) == 0) {
-			posX = 8;
-			posY = 24;
-		}
+void asyncGameLoop_PlayAnimationCondition(bool *ref) {
+	*ref = asyncGameLoop_PlayAnimation.animation->duration != 0;
+}
 
-		s_var_8068 = 0;
+void asyncGameLoop_PlayAnimationInner1Open() {
+	const HouseAnimation_Animation *animation = asyncGameLoop_PlayAnimation.animation;
 
-		if (mode == 0) {
-			wsa = NULL;
-			frame = 0;
+
+	uint32 loc1C;
+	bool loc20;
+	uint32 loc24;
+	uint16 locdi;
+
+	async_GameLoop_PlayAnimationInner.mode = animation->flags & 0x3;
+	async_GameLoop_PlayAnimationInner.loc10 = g_timerGUI + animation->duration * 6;
+	async_GameLoop_PlayAnimationInner.loc14 = async_GameLoop_PlayAnimationInner.loc10 + 30;
+	async_GameLoop_PlayAnimationInner.posX = 0;
+	async_GameLoop_PlayAnimationInner.posY = 0;
+
+	if ((animation->flags & 0x20) == 0) {
+		async_GameLoop_PlayAnimationInner.posX = 8;
+		async_GameLoop_PlayAnimationInner.posY = 24;
+	}
+
+	s_var_8068 = 0;
+
+	if (async_GameLoop_PlayAnimationInner.mode == 0) {
+		async_GameLoop_PlayAnimationInner.wsa = NULL;
+		async_GameLoop_PlayAnimationInner.frame = 0;
+	} else {
+		char filenameBuffer[16];
+
+		if (async_GameLoop_PlayAnimationInner.mode == 3) {
+			async_GameLoop_PlayAnimationInner.frame = animation->frameCount;
+			loc20 = true;
 		} else {
-			char filenameBuffer[16];
-
-			if (mode == 3) {
-				frame = animation->frameCount;
-				loc20 = true;
-			} else {
-				frame = 0;
-				loc20 = ((animation->flags & 0x40) != 0) ? true : false;
-			}
-
-			if ((animation->flags & 0x480) != 0) {
-				GUI_ClearScreen(3);
-
-				wsa = GFX_Screen_Get_ByIndex(5);
-
-				loc24 = GFX_Screen_GetSize_ByIndex(5) + GFX_Screen_GetSize_ByIndex(6);
-				loc20 = false;
-			} else {
-				wsa = GFX_Screen_Get_ByIndex(3);
-
-				loc24 = GFX_Screen_GetSize_ByIndex(3) + GFX_Screen_GetSize_ByIndex(5) + GFX_Screen_GetSize_ByIndex(6);
-			}
-
-			snprintf(filenameBuffer, sizeof(filenameBuffer), "%s.WSA", animation->string);
-			wsa = WSA_LoadFile(filenameBuffer, wsa, loc24, loc20);
+			async_GameLoop_PlayAnimationInner.frame = 0;
+			loc20 = ((animation->flags & 0x40) != 0) ? true : false;
 		}
 
-		locdi = 0;
-		if ((animation->flags & 0x8) != 0) {
-			loc10 -= 45;
-			locdi++;
+		if ((animation->flags & 0x480) != 0) {
+			GUI_ClearScreen(3);
+
+			async_GameLoop_PlayAnimationInner.wsa = GFX_Screen_Get_ByIndex(5);
+
+			loc24 = GFX_Screen_GetSize_ByIndex(5) + GFX_Screen_GetSize_ByIndex(6);
+			loc20 = false;
 		} else {
-			if ((animation->flags & 0x10) != 0) {
-				loc10 -= 15;
-				locdi++;
-			}
+			async_GameLoop_PlayAnimationInner.wsa = GFX_Screen_Get_ByIndex(3);
+
+			loc24 = GFX_Screen_GetSize_ByIndex(3) + GFX_Screen_GetSize_ByIndex(5) + GFX_Screen_GetSize_ByIndex(6);
 		}
 
-		if ((animation->flags & 0x4) != 0) {
-			GameLoop_PlaySubtitle(animationMode);
-			WSA_DisplayFrame(wsa, frame++, posX, posY, 0);
-			GameLoop_PalettePart_Update(true);
+		snprintf(filenameBuffer, sizeof(filenameBuffer), "%s.WSA", animation->string);
+		async_GameLoop_PlayAnimationInner.wsa = WSA_LoadFile(filenameBuffer, async_GameLoop_PlayAnimationInner.wsa, loc24, loc20);
+	}
 
-			memcpy(&g_palette1[215 * 3], s_palettePartCurrent, 18);
-
-			GUI_SetPaletteAnimated(g_palette1, 45);
-
-			locdi++;
-		} else {
-			if ((animation->flags & 0x480) != 0) {
-				GameLoop_PlaySubtitle(animationMode);
-				WSA_DisplayFrame(wsa, frame++, posX, posY, 2);
-				locdi++;
-
-				if ((animation->flags & 0x480) == 0x80) {
-					GUI_Screen_FadeIn2(8, 24, 304, 120, 2, 0, 1, false);
-				} else if ((animation->flags & 0x480) == 0x400) {
-					GUI_Screen_FadeIn(1, 24, 1, 24, 38, 120, 2, 0);
-				}
-			}
-		}
-
-		loc1C = loc10 - g_timerGUI;
-		loc18 = 0;
-		loc04 = 1;
-
-		switch (mode) {
-			case 0:
-				loc04 = animation->frameCount - locdi;
-				loc18 = loc1C / loc04;
-				break;
-
-			case 1:
-				loc04 = WSA_GetFrameCount(wsa);
-				loc18 = loc1C / animation->frameCount;
-				break;
-
-			case 2:
-				loc04 = WSA_GetFrameCount(wsa) - locdi;
-				loc18 = loc1C / loc04;
-				loc10 -= loc18;
-				break;
-
-			case 3:
-				frame = animation->frameCount;
-				loc04 = 1;
-				loc18 = loc1C / 20;
-				break;
-
-			default:
-				PrepareEnd();
-				Error("Bad mode in animation #%i.\n", animationMode);
-				exit(0);
-		}
-
-		while (loc10 > g_timerGUI) {
-			g_timerTimeout = loc18;
-
-			GameLoop_PlaySubtitle(animationMode);
-			WSA_DisplayFrame(wsa, frame++, posX, posY, 0);
-
-			if (mode == 1 && frame == loc04) {
-				frame = 0;
-			} else {
-				if (mode == 3) frame--;
-			}
-
-			if (Input_Keyboard_NextKey() != 0 && s_var_37B4) {
-				WSA_Unload(wsa);
-				return;
-			}
-
-			do {
-				GameLoop_PalettePart_Update(false);
-				sleepIdle();
-			} while (g_timerTimeout != 0 && loc10 > g_timerGUI);
-		}
-
-		if (mode == 2) {
-			bool displayed;
-			do {
-				GameLoop_PlaySubtitle(animationMode);
-				displayed = WSA_DisplayFrame(wsa, frame++, posX, posY, 0);
-			} while (displayed);
-		}
-
+	locdi = 0;
+	if ((animation->flags & 0x8) != 0) {
+		async_GameLoop_PlayAnimationInner.loc10 -= 45;
+		locdi++;
+	} else {
 		if ((animation->flags & 0x10) != 0) {
-			memset(&g_palette_998A[3 * 1], 63, 255 * 3);
-
-			memcpy(&g_palette_998A[215 * 3], s_palettePartCurrent, 18);
-
-			GUI_SetPaletteAnimated(g_palette_998A, 15);
-
-			memcpy(g_palette_998A, g_palette1, 256 * 3);
+			async_GameLoop_PlayAnimationInner.loc10 -= 15;
+			locdi++;
 		}
+	}
 
-		if ((animation->flags & 0x8) != 0) {
-			GameLoop_PalettePart_Update(true);
+	if ((animation->flags & 0x4) != 0) {
+		GameLoop_PlaySubtitle(asyncGameLoop_PlayAnimation.animationMode);
+		WSA_DisplayFrame(async_GameLoop_PlayAnimationInner.wsa, async_GameLoop_PlayAnimationInner.frame++, async_GameLoop_PlayAnimationInner.posX, async_GameLoop_PlayAnimationInner.posY, 0);
+		GameLoop_PalettePart_Update(true);
 
-			memcpy(&g_palette_998A[215 * 3], s_palettePartCurrent, 18);
+		memcpy(&g_palette1[215 * 3], s_palettePartCurrent, 18);
 
-			GUI_SetPaletteAnimated(g_palette_998A, 45);
+		GUI_SetPaletteAnimated(g_palette1, 45);
+
+		locdi++;
+	} else {
+		if ((animation->flags & 0x480) != 0) {
+			GameLoop_PlaySubtitle(asyncGameLoop_PlayAnimation.animationMode);
+			WSA_DisplayFrame(async_GameLoop_PlayAnimationInner.wsa, async_GameLoop_PlayAnimationInner.frame++, async_GameLoop_PlayAnimationInner.posX, async_GameLoop_PlayAnimationInner.posY, 2);
+			locdi++;
+
+			if ((animation->flags & 0x480) == 0x80) {
+				GUI_Screen_FadeIn2(8, 24, 304, 120, 2, 0, 1, false);
+			} else if ((animation->flags & 0x480) == 0x400) {
+				GUI_Screen_FadeIn(1, 24, 1, 24, 38, 120, 2, 0);
+			}
 		}
+	}
 
-		WSA_Unload(wsa);
+	loc1C = async_GameLoop_PlayAnimationInner.loc10 - g_timerGUI;
+	async_GameLoop_PlayAnimationInner.loc18 = 0;
+	async_GameLoop_PlayAnimationInner.loc04 = 1;
 
-		animationMode++;
-		animation++;
+	switch (async_GameLoop_PlayAnimationInner.mode) {
+		case 0:
+			async_GameLoop_PlayAnimationInner.loc04 = animation->frameCount - locdi;
+			async_GameLoop_PlayAnimationInner.loc18 = loc1C / async_GameLoop_PlayAnimationInner.loc04;
+			break;
 
-		while (loc14 > g_timerGUI) sleepIdle();
+		case 1:
+			async_GameLoop_PlayAnimationInner.loc04 = WSA_GetFrameCount(async_GameLoop_PlayAnimationInner.wsa);
+			async_GameLoop_PlayAnimationInner.loc18 = loc1C / animation->frameCount;
+			break;
+
+		case 2:
+			async_GameLoop_PlayAnimationInner.loc04 = WSA_GetFrameCount(async_GameLoop_PlayAnimationInner.wsa) - locdi;
+			async_GameLoop_PlayAnimationInner.loc18 = loc1C / async_GameLoop_PlayAnimationInner.loc04;
+			async_GameLoop_PlayAnimationInner.loc10 -= async_GameLoop_PlayAnimationInner.loc18;
+			break;
+
+		case 3:
+			async_GameLoop_PlayAnimationInner.frame = animation->frameCount;
+			async_GameLoop_PlayAnimationInner.loc04 = 1;
+			async_GameLoop_PlayAnimationInner.loc18 = loc1C / 20;
+			break;
+
+		default:
+			PrepareEnd();
+			Error("Bad mode in animation #%i.\n", asyncGameLoop_PlayAnimation.animationMode);
+			exit(0);
 	}
 }
 
-static void GameLoop_LevelEndAnimation()
+void asyncGameLoop_PlayAnimationInner1Close() {
+	/*if (async_GameLoop_PlayAnimationInner.mode == 2) {
+		bool displayed;
+		do {
+			GameLoop_PlaySubtitle(asyncGameLoop_PlayAnimation.animationMode);
+			displayed = WSA_DisplayFrame(async_GameLoop_PlayAnimationInner.wsa, async_GameLoop_PlayAnimationInner.frame++, async_GameLoop_PlayAnimationInner.posX, async_GameLoop_PlayAnimationInner.posY, 0);
+		} while (displayed);
+	}*/
+
+	if ((asyncGameLoop_PlayAnimation.animation->flags & 0x10) != 0) {
+		memset(&g_palette_998A[3 * 1], 63, 255 * 3);
+
+		memcpy(&g_palette_998A[215 * 3], s_palettePartCurrent, 18);
+
+		GUI_SetPaletteAnimated(g_palette_998A, 15);
+
+		memcpy(g_palette_998A, g_palette1, 256 * 3);
+	}
+
+	if ((asyncGameLoop_PlayAnimation.animation->flags & 0x8) != 0) {
+		GameLoop_PalettePart_Update(true);
+
+		memcpy(&g_palette_998A[215 * 3], s_palettePartCurrent, 18);
+
+		GUI_SetPaletteAnimated(g_palette_998A, 45);
+	}
+
+	WSA_Unload(async_GameLoop_PlayAnimationInner.wsa);
+
+	asyncGameLoop_PlayAnimation.animationMode++;
+	asyncGameLoop_PlayAnimation.animation++;
+
+	/*while (async_GameLoop_PlayAnimationInner.loc14 > g_timerGUI) sleepIdle();*/
+}
+
+void asyncGameLoop_PlayAnimationInner1Condition(bool *ref) {
+	*ref = async_GameLoop_PlayAnimationInner.loc10 > g_timerGUI;
+}
+
+static bool loopConditionFirstPass;
+void asyncGameLoop_PlayAnimationInner2LoopOpen() {
+	g_timerTimeout = async_GameLoop_PlayAnimationInner.loc18;
+
+	GameLoop_PlaySubtitle(asyncGameLoop_PlayAnimation.animationMode);
+	WSA_DisplayFrame(async_GameLoop_PlayAnimationInner.wsa, async_GameLoop_PlayAnimationInner.frame++, async_GameLoop_PlayAnimationInner.posX, async_GameLoop_PlayAnimationInner.posY, 0);
+
+	if (async_GameLoop_PlayAnimationInner.mode == 1 && async_GameLoop_PlayAnimationInner.frame == async_GameLoop_PlayAnimationInner.loc04) {
+		async_GameLoop_PlayAnimationInner.frame = 0;
+	} else {
+		if (async_GameLoop_PlayAnimationInner.mode == 3) async_GameLoop_PlayAnimationInner.frame--;
+	}
+
+	/*if (Input_Keyboard_NextKey() != 0 && s_var_37B4) {
+		WSA_Unload(async_GameLoop_PlayAnimationInner.wsa);
+		return;
+	}*/
+
+	loopConditionFirstPass = true;
+}
+
+void asyncGameLoop_PlayAnimationInner2LoopCondition(bool *ref) {
+	*ref = loopConditionFirstPass || (g_timerTimeout != 0 && async_GameLoop_PlayAnimationInner.loc10 > g_timerGUI);
+	loopConditionFirstPass = false;
+}
+
+void asyncGameLoop_PlayAnimationInner2LoopLoop() {
+	GameLoop_PalettePart_Update(false);
+	sleepIdle();
+}
+
+void asyncGameLoop_PlayAnimationInner1Loop() {
+	Async_InvokeInLoop(asyncGameLoop_PlayAnimationInner2LoopOpen,
+			asyncGameLoop_PlayAnimationInner2LoopCondition,
+			asyncGameLoop_PlayAnimationInner2LoopLoop,
+			async_noop);
+}
+
+void asyncGameLoop_PlayAnimationLoop() {
+	Async_InvokeInLoop(
+			asyncGameLoop_PlayAnimationInner1Open,
+			asyncGameLoop_PlayAnimationInner1Condition,
+			asyncGameLoop_PlayAnimationInner1Loop,
+			asyncGameLoop_PlayAnimationInner1Close);
+}
+
+static void AsyncGameLoop_PlayAnimation()
+{
+	asyncGameLoop_PlayAnimation.animation = s_houseAnimation_animation;
+	asyncGameLoop_PlayAnimation.animationMode = 0;
+
+
+	Async_InvokeInLoop(async_noop,
+			asyncGameLoop_PlayAnimationCondition,
+			asyncGameLoop_PlayAnimationLoop,
+			async_noop);
+}
+
+static void GameLoop_LevelEndAnimationClose() {
+	Driver_Music_FadeOut();
+	GameLoop_FinishAnimation();
+}
+
+static void GameLoop_GameEndAnimationClose() {
+	Driver_Music_FadeOut();
+	GameLoop_FinishAnimation();
+	AsyncGameLoop_GameCredits();
+}
+
+/**
+ * Shows the end game "movie"
+ */
+static void AsyncGameLoop_GameEndAnimation()
+{
+	const HouseAnimation_Animation *animation;
+	const HouseAnimation_Subtitle *subtitle;
+	const HouseAnimation_SoundEffect *soundEffect;
+	uint16 sound;
+
+	Voice_LoadVoices(0xFFFE);
+
+	switch (g_playerHouseID) {
+		case HOUSE_HARKONNEN:
+			animation   = g_table_houseAnimation_animation[HOUSEANIMATION_LEVEL9_HARKONNEN];
+			subtitle    = g_table_houseAnimation_subtitle[HOUSEANIMATION_LEVEL9_HARKONNEN];
+			soundEffect = g_table_houseAnimation_soundEffect[HOUSEANIMATION_LEVEL9_HARKONNEN];
+			sound       = 0x1E;
+			break;
+
+		default:
+		case HOUSE_ATREIDES:
+			animation   = g_table_houseAnimation_animation[HOUSEANIMATION_LEVEL9_ARTREIDES];
+			subtitle    = g_table_houseAnimation_subtitle[HOUSEANIMATION_LEVEL9_ARTREIDES];
+			soundEffect = g_table_houseAnimation_soundEffect[HOUSEANIMATION_LEVEL9_ARTREIDES];
+			sound       = 0x1F;
+			break;
+
+		case HOUSE_ORDOS:
+			animation   = g_table_houseAnimation_animation[HOUSEANIMATION_LEVEL9_ORDOS];
+			subtitle    = g_table_houseAnimation_subtitle[HOUSEANIMATION_LEVEL9_ORDOS];
+			soundEffect = g_table_houseAnimation_soundEffect[HOUSEANIMATION_LEVEL9_ORDOS];
+			sound       = 0x20;
+			break;
+	}
+
+	GameLoop_PrepareAnimation(animation, subtitle, 0xFFFF, soundEffect);
+
+	Music_Play(sound);
+
+	AsyncGameLoop_PlayAnimation();
+	Async_InvokeAfterAsync(GameLoop_GameEndAnimationClose);
+}
+
+static void AsyncGameLoop_LevelEndAnimation()
 {
 	const HouseAnimation_Animation *animation;
 	const HouseAnimation_Subtitle *subtitle;
@@ -762,11 +876,8 @@ static void GameLoop_LevelEndAnimation()
 
 	Music_Play(0x22);
 
-	GameLoop_PlayAnimation();
-
-	Driver_Music_FadeOut();
-
-	GameLoop_FinishAnimation();
+	AsyncGameLoop_PlayAnimation();
+	Async_InvokeAfterAsync(GameLoop_LevelEndAnimationClose);
 }
 
 static void GameLoop_Uninit()
@@ -808,16 +919,22 @@ static void GameCredits_SwapScreen(uint16 top, uint16 height, uint16 screenID, v
 	}
 }
 
-static void GameCredits_Play(char *data, uint16 windowID, uint16 memory, uint16 screenID, uint16 delay)
-{
-	uint16 loc02;
-	uint16 stringCount = 0;
+typedef struct Async_GameCredits {
+	char *data;
+	uint16 windowID;
+	uint16 memory;
+	uint16 screenID;
+	uint16 spriteID;
+	uint16 delay;
+	bool loc10;
+	uint16 stage;
 	uint32 loc0C;
-	uint16 spriteID = 514;
-	bool loc10 = false;
-	uint16 spriteX;
-	uint16 spriteY;
-	uint16 spritePos = 0;
+
+	uint16 loc02;
+	uint16 stringCount;
+	uint16 spritePos;
+	uint16 counter;
+
 	struct {
 		uint16 x;
 		uint16 y;
@@ -826,186 +943,260 @@ static void GameCredits_Play(char *data, uint16 windowID, uint16 memory, uint16 
 		uint8  charHeight;
 		uint8  type;
 	} strings[33];
+
 	struct {
 		uint16 x;
 		uint16 y;
 	} positions[6];
-	uint16 stage = 4;
-	uint16 counter = 60;
 
-	Widget_SetCurrentWidget(windowID);
+} Async_GameCredits;
 
-	spriteX = (g_curWidgetWidth << 3) - Sprite_GetWidth(g_sprites[spriteID]);
-	spriteY = g_curWidgetHeight - Sprite_GetHeight(g_sprites[spriteID]);
+static Async_GameCredits async_GameCredits;
 
-	positions[0].x = spriteX;
-	positions[0].y = 0;
-	positions[1].x = 0;
-	positions[1].y = spriteY / 2;
-	positions[2].x = spriteX;
-	positions[2].y = spriteY;
-	positions[3].x = 0;
-	positions[3].y = 0;
-	positions[4].x = spriteX;
-	positions[4].y = spriteY / 2;
-	positions[5].x = 0;
-	positions[5].y = spriteY;
+void async_GameCredits_PlayOpen() {
+	uint16 spriteX;
+	uint16 spriteY;
 
-	GUI_Screen_Copy(0, 0, 0, 0, SCREEN_WIDTH / 8, SCREEN_HEIGHT, 0, memory);
-	GUI_Screen_Copy(0, 0, 0, 0, SCREEN_WIDTH / 8, SCREEN_HEIGHT, memory, screenID);
+	async_GameCredits.stringCount = 0;
+	async_GameCredits.spritePos = 0;
+	async_GameCredits.counter = 60;
+	async_GameCredits.spriteID = 514;
+	async_GameCredits.stage = 4;
 
-	GameCredits_SwapScreen(g_curWidgetYBase, g_curWidgetHeight, memory, s_buffer_182E);
+	Widget_SetCurrentWidget(async_GameCredits.windowID);
+
+	spriteX = (g_curWidgetWidth << 3) - Sprite_GetWidth(g_sprites[async_GameCredits.spriteID]);
+	spriteY = g_curWidgetHeight - Sprite_GetHeight(g_sprites[async_GameCredits.spriteID]);
+
+	async_GameCredits.positions[0].x = spriteX;
+	async_GameCredits.positions[0].y = 0;
+	async_GameCredits.positions[1].x = 0;
+	async_GameCredits.positions[1].y = spriteY / 2;
+	async_GameCredits.positions[2].x = spriteX;
+	async_GameCredits.positions[2].y = spriteY;
+	async_GameCredits.positions[3].x = 0;
+	async_GameCredits.positions[3].y = 0;
+	async_GameCredits.positions[4].x = spriteX;
+	async_GameCredits.positions[4].y = spriteY / 2;
+	async_GameCredits.positions[5].x = 0;
+	async_GameCredits.positions[5].y = spriteY;
+
+	GUI_Screen_Copy(0, 0, 0, 0, SCREEN_WIDTH / 8, SCREEN_HEIGHT, 0, async_GameCredits.memory);
+	GUI_Screen_Copy(0, 0, 0, 0, SCREEN_WIDTH / 8, SCREEN_HEIGHT, async_GameCredits.memory, async_GameCredits.screenID);
+
+	GameCredits_SwapScreen(g_curWidgetYBase, g_curWidgetHeight, async_GameCredits.memory, s_buffer_182E);
 
 	GFX_Screen_SetActive(0);
-	loc0C = g_timerSleep;
 
 	Input_History_Clear();
 
-	while (true) {
-		while (loc0C > g_timerSleep) sleepIdle();
+	async_GameCredits.loc10 = false;
+	async_GameCredits.loc0C = g_timerSleep;
+}
 
-		loc0C = g_timerSleep + delay;
+void async_GameCredits_PlayLoop() {
+	async_GameCredits.loc10 = false;
+	async_GameCredits.loc0C = g_timerSleep + async_GameCredits.delay;
 
-		while ((g_curWidgetHeight / 6) + 2 > stringCount && *data != 0) {
-			char *text = data;
-			uint16 y;
+	while ((g_curWidgetHeight / 6) + 2 > async_GameCredits.stringCount && *async_GameCredits.data != 0) {
+		char *text = async_GameCredits.data;
+		uint16 y;
 
-			if (stringCount != 0) {
-				y = strings[stringCount - 1].y;
-				if (strings[stringCount - 1].separator != 5) y += strings[stringCount - 1].charHeight + strings[stringCount - 1].charHeight / 8;
-			} else {
-				y = g_curWidgetHeight;
-			}
-
-			text = data;
-
-			data = strpbrk(data, "\x05\r");
-			if (data == NULL) data = strchr(text, '\0');
-
-			strings[stringCount].separator = *data;
-			*data = '\0';
-			if (strings[stringCount].separator != 0) data++;
-			strings[stringCount].type = 0;
-
-			if (*text == 3 || *text == 4) strings[stringCount].type = *text++;
-
-			if (*text == 1) {
-				text++;
-				Font_Select(g_fontNew6p);
-			} else if (*text == 2) {
-				text++;
-				Font_Select(g_fontNew8p);
-			}
-
-			strings[stringCount].charHeight = g_fontCurrent->height;
-
-			switch (strings[stringCount].type) {
-				case 3:
-					strings[stringCount].x = 157 - Font_GetStringWidth(text);
-					break;
-
-				case 4:
-					strings[stringCount].x = 161;
-					break;
-
-				default:
-					strings[stringCount].x = 1 + (SCREEN_WIDTH - Font_GetStringWidth(text)) / 2;
-					break;
-			}
-
-			strings[stringCount].y = y;
-			strings[stringCount].text = text;
-
-			stringCount++;
+		if (async_GameCredits.stringCount != 0) {
+			y = async_GameCredits.strings[async_GameCredits.stringCount - 1].y;
+			if (async_GameCredits.strings[async_GameCredits.stringCount - 1].separator != 5) y +=
+					async_GameCredits.strings[async_GameCredits.stringCount - 1].charHeight + async_GameCredits.strings[async_GameCredits.stringCount - 1].charHeight / 8;
+		} else {
+			y = g_curWidgetHeight;
 		}
 
-		switch (stage) {
-			case 0:
-				GUI_ClearScreen(memory);
+		text = async_GameCredits.data;
 
-				if (spriteID == 514) GUI_ClearScreen(screenID);
+		async_GameCredits.data = strpbrk(async_GameCredits.data, "\x05\r");
+		if (async_GameCredits.data == NULL) async_GameCredits.data = strchr(text, '\0');
 
-				stage++;
-				counter = 2;
-				break;
+		async_GameCredits.strings[async_GameCredits.stringCount].separator = *async_GameCredits.data;
+		*async_GameCredits.data = '\0';
 
-			case 1: case 4:
-				if (counter-- == 0) {
-					counter = 0;
-					stage++;
-				}
-				break;
+		if (async_GameCredits.strings[async_GameCredits.stringCount].separator != 0) {
+			async_GameCredits.data++;
+		}
 
-			case 2:
-				if (spriteID == 525) spriteID = 514;
+		async_GameCredits.strings[async_GameCredits.stringCount].type = 0;
 
-				GUI_DrawSprite(memory, g_sprites[spriteID], positions[spritePos].x, positions[spritePos].y, windowID, 0x4000);
+		if (*text == 3 || *text == 4) {
+			async_GameCredits.strings[async_GameCredits.stringCount].type = *text++;
+		}
 
-				counter = 8;
-				stage++;
-				spriteID++;
-				if (++spritePos > 5) spritePos = 0;;
-				break;
+		if (*text == 1) {
+			text++;
+			Font_Select(g_fontNew6p);
+		} else if (*text == 2) {
+			text++;
+			Font_Select(g_fontNew8p);
+		}
 
+		async_GameCredits.strings[async_GameCredits.stringCount].charHeight = g_fontCurrent->height;
+
+		switch (async_GameCredits.strings[async_GameCredits.stringCount].type) {
 			case 3:
-				GFX_SetPalette(g_palette1 + 256 * 3 * counter);
-
-				if (counter-- == 0) {
-					stage++;
-					counter = 20;
-				}
+				async_GameCredits.strings[async_GameCredits.stringCount].x = 157 - Font_GetStringWidth(text);
 				break;
 
-			case 5:
-				GFX_SetPalette(g_palette1 + 256 * 3 * counter);
-
-				if (counter++ >= 8) stage = 0;
+			case 4:
+				async_GameCredits.strings[async_GameCredits.stringCount].x = 161;
 				break;
 
-			default: break;
+			default:
+				async_GameCredits.strings[async_GameCredits.stringCount].x = 1 + (SCREEN_WIDTH - Font_GetStringWidth(text)) / 2;
+				break;
 		}
 
-		GUI_Screen_Copy(g_curWidgetXBase, g_curWidgetYBase, g_curWidgetXBase, g_curWidgetYBase, g_curWidgetWidth, g_curWidgetHeight, memory, screenID);
+		async_GameCredits.strings[async_GameCredits.stringCount].y = y;
+		async_GameCredits.strings[async_GameCredits.stringCount].text = text;
 
-		for (loc02 = 0; loc02 < stringCount; loc02++) {
-			if ((int16)strings[loc02].y < g_curWidgetHeight) {
-				GFX_Screen_SetActive(screenID);
-
-				Font_Select(g_fontNew8p);
-
-				if (strings[loc02].charHeight != g_fontCurrent->height) Font_Select(g_fontNew6p);
-
-				GUI_DrawText(strings[loc02].text, strings[loc02].x, strings[loc02].y + g_curWidgetYBase, 255, 0);
-
-				GFX_Screen_SetActive(0);
-			}
-
-			strings[loc02].y--;
-		}
-
-		GameCredits_SwapScreen(g_curWidgetYBase, g_curWidgetHeight, screenID, s_buffer_182E);
-
-		if ((int16)strings[0].y < -10) {
-			strings[0].text += strlen(strings[0].text);
-			*strings[0].text = strings[0].separator;
-			stringCount--;
-			memcpy(&strings[0], &strings[1], stringCount * sizeof(*strings));
-		}
-
-		if ((g_curWidgetHeight / 6 + 2) > stringCount) {
-			if (strings[stringCount - 1].y + strings[stringCount - 1].charHeight < g_curWidgetYBase + g_curWidgetHeight) loc10 = true;
-		}
-
-		if (loc10 && stage == 0) break;
-
-		if (Input_Keyboard_NextKey() != 0) break;
+		async_GameCredits.stringCount++;
 	}
 
+	switch (async_GameCredits.stage) {
+		case 0:
+			GUI_ClearScreen(async_GameCredits.memory);
+
+			if (async_GameCredits.spriteID == 514) GUI_ClearScreen(async_GameCredits.screenID);
+
+			async_GameCredits.stage++;
+			async_GameCredits.counter = 2;
+			break;
+
+		case 1: case 4:
+			if (async_GameCredits.counter-- == 0) {
+				async_GameCredits.counter = 0;
+				async_GameCredits.stage++;
+			}
+			break;
+
+		case 2:
+			if (async_GameCredits.spriteID == 525) {
+				async_GameCredits.spriteID = 514;
+			}
+
+			GUI_DrawSprite(async_GameCredits.memory,
+					g_sprites[async_GameCredits.spriteID],
+					async_GameCredits.positions[async_GameCredits.spritePos].x,
+					async_GameCredits.positions[async_GameCredits.spritePos].y,
+					async_GameCredits.windowID, 0x4000);
+
+			async_GameCredits.counter = 8;
+			async_GameCredits.stage++;
+			async_GameCredits.spriteID++;
+			if (++async_GameCredits.spritePos > 5) {
+				async_GameCredits.spritePos = 0;;
+			}
+			break;
+
+		case 3:
+			GFX_SetPalette(g_palette1 + 256 * 3 * async_GameCredits.counter);
+
+			if (async_GameCredits.counter-- == 0) {
+				async_GameCredits.stage++;
+				async_GameCredits.counter = 20;
+			}
+			break;
+
+		case 5:
+			GFX_SetPalette(g_palette1 + 256 * 3 * async_GameCredits.counter);
+
+			if (async_GameCredits.counter++ >= 8) async_GameCredits.stage = 0;
+			break;
+
+		default: break;
+	}
+
+	GUI_Screen_Copy(g_curWidgetXBase,
+			g_curWidgetYBase,
+			g_curWidgetXBase,
+			g_curWidgetYBase,
+			g_curWidgetWidth,
+			g_curWidgetHeight,
+			async_GameCredits.memory,
+			async_GameCredits.screenID);
+
+	for (async_GameCredits.loc02 = 0; async_GameCredits.loc02 < async_GameCredits.stringCount; async_GameCredits.loc02++) {
+		if ((int16)async_GameCredits.strings[async_GameCredits.loc02].y < g_curWidgetHeight) {
+			GFX_Screen_SetActive(async_GameCredits.screenID);
+
+			Font_Select(g_fontNew8p);
+
+			if (async_GameCredits.strings[async_GameCredits.loc02].charHeight != g_fontCurrent->height) Font_Select(g_fontNew6p);
+
+			GUI_DrawText(async_GameCredits.strings[async_GameCredits.loc02].text,
+					async_GameCredits.strings[async_GameCredits.loc02].x,
+					async_GameCredits.strings[async_GameCredits.loc02].y + g_curWidgetYBase, 255, 0);
+
+			GFX_Screen_SetActive(0);
+		}
+
+		async_GameCredits.strings[async_GameCredits.loc02].y--;
+	}
+
+	GameCredits_SwapScreen(g_curWidgetYBase, g_curWidgetHeight, async_GameCredits.screenID, s_buffer_182E);
+
+	if ((int16)async_GameCredits.strings[0].y < -10) {
+		async_GameCredits.strings[0].text += strlen(async_GameCredits.strings[0].text);
+		*async_GameCredits.strings[0].text = async_GameCredits.strings[0].separator;
+		async_GameCredits.stringCount--;
+		memcpy(&async_GameCredits.strings[0], &async_GameCredits.strings[1], async_GameCredits.stringCount * sizeof(*async_GameCredits.strings));
+	}
+
+	if ((g_curWidgetHeight / 6 + 2) > async_GameCredits.stringCount) {
+		if (async_GameCredits.strings[async_GameCredits.stringCount - 1].y
+				+ async_GameCredits.strings[async_GameCredits.stringCount - 1].charHeight < g_curWidgetYBase + g_curWidgetHeight) {
+			async_GameCredits.loc10 = true;
+		}
+	}
+}
+
+void __async_GameCredits_Condition(bool *ref) {
+	*ref = async_GameCredits.loc0C > g_timerSleep;
+}
+
+void __async_GameCredits_Loop() {
+	sleepIdle();
+}
+
+void async_GameCredits_PlayCondition(bool *ref) {
+	*ref = !(async_GameCredits.loc10 && async_GameCredits.stage == 0);
+
+	if (ref) {
+		Async_InvokeInLoop(async_noop,
+				__async_GameCredits_Condition,
+				__async_GameCredits_Loop,
+				async_noop);
+	}
+}
+
+void async_GameCredits_PlayClose() {
 	GUI_SetPaletteAnimated(g_palette2, 120);
 
 	GUI_ClearScreen(0);
-	GUI_ClearScreen(memory);
-	GUI_ClearScreen(screenID);
+	GUI_ClearScreen(async_GameCredits.memory);
+	GUI_ClearScreen(async_GameCredits.screenID);
+}
+
+static void GameCredits_Play(char *data, uint16 windowID, uint16 memory, uint16 screenID, uint16 delay)
+{
+	async_GameCredits.data = data;
+	async_GameCredits.windowID = windowID;
+	async_GameCredits.memory = memory;
+	async_GameCredits.screenID = screenID;
+	async_GameCredits.delay = delay;
+
+	Async_InvokeInLoop(
+			async_GameCredits_PlayOpen,
+			async_GameCredits_PlayCondition,
+			async_GameCredits_PlayLoop,
+			async_GameCredits_PlayClose);
+
 }
 
 static void GameCredits_LoadPalette()
@@ -1038,8 +1229,7 @@ static void GameCredits_LoadPalette()
 /**
  * Shows the game credits.
  */
-static void GameLoop_GameCredits()
-{
+static void async_GameLoop_GameCreditsOpen() {
 	static const uint8 colours[] = {0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 	uint16 i;
@@ -1094,18 +1284,9 @@ static void GameLoop_GameCredits()
 	g_fontCharOffset = -1;
 
 	GFX_SetPalette(g_palette1);
+}
 
-	while (true) {
-		File_ReadBlockFile(String_GenerateFilename("CREDITS"), s_buffer_1832, GFX_Screen_GetSize_ByIndex(6));
-
-		GameCredits_Play(s_buffer_1832, 20, 2, 4, 6);
-
-		if (Input_Keyboard_NextKey() != 0) break;
-
-		Music_Play(33);
-		sleepIdle();
-	}
-
+static void async_GameLoop_GameCreditsClose() {
 	GUI_SetPaletteAnimated(g_palette2, 60);
 
 	Driver_Music_FadeOut();
@@ -1113,53 +1294,23 @@ static void GameLoop_GameCredits()
 	GFX_ClearScreen();
 }
 
-/**
- * Shows the end game "movie"
- */
-static void GameLoop_GameEndAnimation()
+static void async_GameLoop_GameCreditsLoop() {
+	File_ReadBlockFile(String_GenerateFilename("CREDITS"), s_buffer_1832, GFX_Screen_GetSize_ByIndex(6));
+
+	GameCredits_Play(s_buffer_1832, 20, 2, 4, 6);
+
+	/*if (Input_Keyboard_NextKey() != 0) break;*/
+
+	Music_Play(33);
+	sleepIdle();
+}
+
+static void AsyncGameLoop_GameCredits()
 {
-	const HouseAnimation_Animation *animation;
-	const HouseAnimation_Subtitle *subtitle;
-	const HouseAnimation_SoundEffect *soundEffect;
-	uint16 sound;
-
-	Voice_LoadVoices(0xFFFE);
-
-	switch (g_playerHouseID) {
-		case HOUSE_HARKONNEN:
-			animation   = g_table_houseAnimation_animation[HOUSEANIMATION_LEVEL9_HARKONNEN];
-			subtitle    = g_table_houseAnimation_subtitle[HOUSEANIMATION_LEVEL9_HARKONNEN];
-			soundEffect = g_table_houseAnimation_soundEffect[HOUSEANIMATION_LEVEL9_HARKONNEN];
-			sound       = 0x1E;
-			break;
-
-		default:
-		case HOUSE_ATREIDES:
-			animation   = g_table_houseAnimation_animation[HOUSEANIMATION_LEVEL9_ARTREIDES];
-			subtitle    = g_table_houseAnimation_subtitle[HOUSEANIMATION_LEVEL9_ARTREIDES];
-			soundEffect = g_table_houseAnimation_soundEffect[HOUSEANIMATION_LEVEL9_ARTREIDES];
-			sound       = 0x1F;
-			break;
-
-		case HOUSE_ORDOS:
-			animation   = g_table_houseAnimation_animation[HOUSEANIMATION_LEVEL9_ORDOS];
-			subtitle    = g_table_houseAnimation_subtitle[HOUSEANIMATION_LEVEL9_ORDOS];
-			soundEffect = g_table_houseAnimation_soundEffect[HOUSEANIMATION_LEVEL9_ORDOS];
-			sound       = 0x20;
-			break;
-	}
-
-	GameLoop_PrepareAnimation(animation, subtitle, 0xFFFF, soundEffect);
-
-	Music_Play(sound);
-
-	GameLoop_PlayAnimation();
-
-	Driver_Music_FadeOut();
-
-	GameLoop_FinishAnimation();
-
-	GameLoop_GameCredits();
+	Async_InvokeInLoop(async_GameLoop_GameCreditsOpen,
+			async_true,
+			async_GameLoop_GameCreditsLoop,
+			async_GameLoop_GameCreditsClose);
 }
 
 static void GameLoop_WonLevelNextLevel() {
@@ -1177,19 +1328,7 @@ static void GameLoop_WonLevelNextLevel() {
 	s_debugForceWin = true;
 }
 
-static void GameLoop_WonLevelEndAnimation() {
-	if (g_campaignID == 9) {
-		GUI_Mouse_Hide_Safe();
-
-		GUI_SetPaletteAnimated(g_palette2, 15);
-		GUI_ClearScreen(0);
-		GameLoop_GameEndAnimation();
-		PrepareEnd();
-		exit(0);
-	}
-
-	GUI_Mouse_Hide_Safe();
-	GameLoop_LevelEndAnimation();
+static void GameLoop_WonLevelEndShowStrategicMap() {
 	GUI_Mouse_Show_Safe();
 
 	File_ReadBlockFile("IBM.PAL", g_palette1, 256 * 3);
@@ -1197,6 +1336,22 @@ static void GameLoop_WonLevelEndAnimation() {
 	Async_GUI_StrategicMap_Show(g_campaignID, true);
 	Async_Storage_uint16(&g_scenarioID);
 	Async_InvokeAfterAsync(GameLoop_WonLevelNextLevel);
+}
+
+static void GameLoop_WonLevelEndAnimation() {
+	if (true || g_campaignID == 9) {
+		GUI_Mouse_Hide_Safe();
+
+		GUI_SetPaletteAnimated(g_palette2, 15);
+		GUI_ClearScreen(0);
+		AsyncGameLoop_GameEndAnimation();
+		/*Async_InvokeAfterAsync(PrepareEnd);*/
+		return;
+	}
+
+	GUI_Mouse_Hide_Safe();
+	AsyncGameLoop_LevelEndAnimation();
+	Async_InvokeAfterAsyncOrNow(GameLoop_WonLevelEndShowStrategicMap);
 }
 
 static void GameLoop_WonLevelEndStats() {
@@ -1412,7 +1567,7 @@ static void GameLoop_GameIntroAnimation()
 
 		GameLoop_PrepareAnimation(animation, subtitle, 0x4A, soundEffect);
 
-		GameLoop_PlayAnimation();
+		AsyncGameLoop_PlayAnimation();
 
 		Driver_Music_FadeOut();
 
