@@ -658,8 +658,15 @@ void AsyncGUI_Widget_Options_ClickCondition(bool *ref) {
 	*ref = asyncGUIWidgetOptionsClick.loop;
 }
 
+#if EMSCRIPTEN
+extern void	saveOnServer();
+#endif
+
 void _SaveGame() {
 	SaveFile("game.dat", "game");
+#if EMSCRIPTEN
+	saveOnServer();
+#endif
 }
 
 void _LoadGame() {
