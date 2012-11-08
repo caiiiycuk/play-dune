@@ -35,6 +35,7 @@
 #include "../timer.h"
 #include "../unit.h"
 
+#include "../async.h"
 
 char g_savegameDesc[5][51];                                 /*!< Array of savegame descriptions for the SaveLoad window. */
 static uint16 s_savegameIndexBase = 0;
@@ -567,70 +568,6 @@ static void GUI_Window_RestoreScreen(WindowDesc *desc)
 	GUI_Mouse_Show_Safe();
 }
 
-/**
- * Handles Click event for "Game controls" button.
- *
- * @param w The widget.
- */
-static void GUI_Widget_GameControls_Click(Widget *w)
-{
-	WindowDesc *desc = &g_gameControlWindowDesc;
-	bool loop;
-
-	GUI_Window_BackupScreen(desc);
-
-	GUI_Window_Create(desc);
-
-	loop = true;
-	while (loop) {
-		Widget *w2 = g_widgetLinkedListTail;
-		uint16 key = GUI_Widget_HandleEvents(w2);
-
-		if ((key & 0x8000) != 0) {
-			w = GUI_Widget_Get_ByIndex(w2, key & 0x7FFF);
-
-			switch ((key & 0x7FFF) - 0x1E) {
-				case 0:
-					g_gameConfig.music ^= 0x1;
-					if (g_gameConfig.music == 0) Driver_Music_Stop();
-					break;
-
-				case 1:
-					g_gameConfig.sounds ^= 0x1;
-					if (g_gameConfig.sounds == 0) Driver_Sound_Stop();
-					break;
-
-				case 2:
-					if (++g_gameConfig.gameSpeed >= 5) g_gameConfig.gameSpeed = 0;
-					break;
-
-				case 3:
-					g_gameConfig.hints ^= 0x1;
-					break;
-
-				case 4:
-					g_gameConfig.autoScroll ^= 0x1;
-					break;
-
-				case 5:
-					loop = false;
-					break;
-
-				default: break;
-			}
-
-			GUI_Widget_MakeNormal(w, false);
-
-			GUI_Widget_Draw(w);
-		}
-
-		GUI_PaletteAnimate();
-		sleepIdle();
-	}
-
-	GUI_Window_RestoreScreen(desc);
-}
-
 static void ShadeScreen()
 {
 	uint16 i;
@@ -683,18 +620,17 @@ static bool GUI_YesNo(uint16 stringID)
 
 	return ret;
 }
-/**
- * Handles Click event for "Options" button.
- *
- * @param w The widget.
- * @return False, always.
- */
-bool GUI_Widget_Options_Click(Widget *w)
-{
-	WindowDesc *desc = &g_optionsWindowDesc;
-	uint16 cursor = g_cursorSpriteID;
-	bool loop;
 
+typedef struct Async_GUI_Widget_Options_Click {
+	Widget *w;
+	uint16 cursor;
+	WindowDesc *desc;
+	bool loop;
+} Async_GUI_Widget_Options_Click;
+
+static Async_GUI_Widget_Options_Click asyncGUIWidgetOptionsClick;
+
+void AsyncGUI_Widget_Options_ClickOpen() {
 	g_cursorSpriteID = 0;
 
 	Sprites_SetMouseSprite(0, 0, g_sprites[0]);
@@ -711,79 +647,96 @@ bool GUI_Widget_Options_Click(Widget *w)
 
 	ShadeScreen();
 
-	GUI_Window_BackupScreen(desc);
+	GUI_Window_BackupScreen(asyncGUIWidgetOptionsClick.desc);
 
-	GUI_Window_Create(desc);
+	GUI_Window_Create(asyncGUIWidgetOptionsClick.desc);
 
-	loop = true;
+	asyncGUIWidgetOptionsClick.loop = true;
+}
 
-	while (loop) {
-		Widget *w2 = g_widgetLinkedListTail;
-		uint16 key = GUI_Widget_HandleEvents(w2);
+void AsyncGUI_Widget_Options_ClickCondition(bool *ref) {
+	*ref = asyncGUIWidgetOptionsClick.loop;
+}
 
-		if ((key & 0x8000) != 0) {
-			w = GUI_Widget_Get_ByIndex(w2, key);
+void _SaveGame() {
+	SaveFile("game.dat", "game");
+}
 
-			GUI_Window_RestoreScreen(desc);
+void _LoadGame() {
+	LoadFile("game.dat");
+}
 
-			switch ((key & 0x7FFF) - 0x1E) {
-				case 0:
-					if (GUI_Widget_SaveLoad_Click(false)) loop = false;
-					break;
+void AsyncGUI_Widget_Options_ClickLoop() {
+	Widget *w2 = g_widgetLinkedListTail;
+	uint16 key = GUI_Widget_HandleEvents(w2);
 
-				case 1:
-					if (GUI_Widget_SaveLoad_Click(true)) loop = false;
-					break;
+	if ((key & 0x8000) != 0) {
+		asyncGUIWidgetOptionsClick.w = GUI_Widget_Get_ByIndex(w2, key);
 
-				case 2:
-					GUI_Widget_GameControls_Click(w);
-					break;
+		GUI_Window_RestoreScreen(asyncGUIWidgetOptionsClick.desc);
 
-				case 3:
-					/* "Are you sure you wish to restart?" */
-					if (!GUI_YesNo(0x76)) break;
+		switch ((key & 0x7FFF) - 0x1E) {
+			case 0:
+				_LoadGame();
+				asyncGUIWidgetOptionsClick.loop = false;
+				break;
 
-					loop = false;
-					g_gameMode = GM_RESTART;
-					break;
+			case 1:
+				_SaveGame();
+				asyncGUIWidgetOptionsClick.loop = false;
+				break;
 
-				case 4:
-					/* "Are you sure you wish to pick a new house?" */
-					if (!GUI_YesNo(0x77)) break;
+			case 2:
+				/*GUI_Widget_GameControls_Click(asyncGUIWidgetOptionsClick.w);*/
+				break;
 
-					loop = false;
-					Driver_Music_FadeOut();
-					g_gameMode = GM_PICKHOUSE;
-					break;
+			case 3:
+				/* "Are you sure you wish to restart?" */
+				/*if (!GUI_YesNo(0x76)) break;
 
-				case 5:
-					loop = false;
-					break;
+				asyncGUIWidgetOptionsClick.loop = false;
+				g_gameMode = GM_RESTART;*/
+				break;
 
-				case 6:
-					/* "Are you sure you want to quit playing?" */
-					loop = !GUI_YesNo(0x65);
-					g_var_38F8 = loop;
+			case 4:
+				/* "Are you sure you wish to pick a new house?" */
+				/*if (!GUI_YesNo(0x77)) break;
 
-					Sound_Output_Feedback(0xFFFE);
+				asyncGUIWidgetOptionsClick.loop = false;
+				Driver_Music_FadeOut();
+				g_gameMode = GM_PICKHOUSE;*/
+				break;
 
-					while (Driver_Voice_IsPlaying()) sleepIdle();
-					break;
+			case 5:
+				asyncGUIWidgetOptionsClick.loop = false;
+				break;
 
-				default: break;
-			}
+			case 6:
+				/* "Are you sure you want to quit playing?" */
+				/*asyncGUIWidgetOptionsClick.loop = !GUI_YesNo(0x65);
+				g_var_38F8 = asyncGUIWidgetOptionsClick.loop;
 
-			if (g_var_38F8 && loop) {
-				GUI_Window_BackupScreen(desc);
+				Sound_Output_Feedback(0xFFFE);
 
-				GUI_Window_Create(desc);
-			}
+				while (Driver_Voice_IsPlaying()) sleepIdle();*/
+				break;
+
+			default:
+				break;
 		}
 
-		GUI_PaletteAnimate();
-		sleepIdle();
+		if (g_var_38F8 && asyncGUIWidgetOptionsClick.loop) {
+			GUI_Window_BackupScreen(asyncGUIWidgetOptionsClick.desc);
+
+			GUI_Window_Create(asyncGUIWidgetOptionsClick.desc);
+		}
 	}
 
+	GUI_PaletteAnimate();
+	sleepIdle();
+}
+
+void AsyncGUI_Widget_Options_ClickClose() {
 	g_textDisplayNeedsUpdate = true;
 
 	Sprites_LoadTiles();
@@ -791,7 +744,7 @@ bool GUI_Widget_Options_Click(Widget *w)
 
 	UnshadeScreen();
 
-	GUI_Widget_MakeSelected(w, false);
+	GUI_Widget_MakeSelected(asyncGUIWidgetOptionsClick.w, false);
 
 	Timer_SetTimer(TIMER_GAME, true);
 
@@ -800,9 +753,28 @@ bool GUI_Widget_Options_Click(Widget *w)
 	Structure_Recount();
 	Unit_Recount();
 
-	g_cursorSpriteID = cursor;
+	g_cursorSpriteID = asyncGUIWidgetOptionsClick.cursor;
 
-	Sprites_SetMouseSprite(0, 0, g_sprites[cursor]);
+	Sprites_SetMouseSprite(0, 0, g_sprites[asyncGUIWidgetOptionsClick.cursor]);
+}
+
+/**
+ * Handles Click event for "Options" button.
+ *
+ * @param w The widget.
+ * @return False, always.
+ */
+bool GUI_Widget_Options_Click(Widget *w)
+{
+	asyncGUIWidgetOptionsClick.w = w;
+	asyncGUIWidgetOptionsClick.cursor = g_cursorSpriteID;
+	asyncGUIWidgetOptionsClick.desc = &g_optionsWindowDesc;
+
+	Async_InvokeInLoop(AsyncGUI_Widget_Options_ClickOpen,
+			AsyncGUI_Widget_Options_ClickCondition,
+			AsyncGUI_Widget_Options_ClickLoop,
+			AsyncGUI_Widget_Options_ClickClose);
+
 
 	return false;
 }
