@@ -162,83 +162,101 @@ static void GUI_Mentat_ShowDialog(uint8 houseID, uint16 stringID, const char *ws
 
 }
 
-static void GUI_Mentat_HelpListLoop()
-{
-	uint16 key = 0;
+typedef struct Async_GUI_Mentat_HelpListLoop {
+	uint16 key;
+} Async_GUI_Mentat_HelpListLoop;
 
-	while (key != 0x8001) {
-		Widget *w = g_widgetMentatTail;
+static Async_GUI_Mentat_HelpListLoop asyncGUIMentatHelpListLoop;
 
-		GUI_Mentat_Animation(0);
+void GUI_Mentat_HelpListLoopCondition(bool *ref) {
+	*ref = asyncGUIMentatHelpListLoop.key != 0x8001;
+}
 
-		key = GUI_Widget_HandleEvents(w);
+void GUI_Mentat_HelpListLoopLoop() {
+	Widget *w = g_widgetMentatTail;
 
-		if ((key & 0x800) != 0) key = 0;
+	asyncGUIMentatHelpListLoop.key = GUI_Widget_HandleEvents(w);
 
-		if (key == 0x8001) break;
+	GUI_Mentat_Animation(0);
 
-		key &= 0x80FF;
 
-		s_selectMentatHelp = true;
-
-		switch (key) {
-			case 0x0053:
-			case 0x0060: /* NUMPAD 8 / ARROW UP */
-			case 0x0453:
-			case 0x0460:
-				if (s_selectedHelpSubject != 0) {
-					GUI_Mentat_List_Click(GUI_Widget_Get_ByIndex(w, s_selectedHelpSubject + 2));
-					break;
-				}
-
-				GUI_Widget_Scrollbar_ArrowUp_Click(g_widgetMentatScrollbar);
-				break;
-
-			case 0x0054:
-			case 0x0062: /* NUMPAD 2 / ARROW DOWN */
-			case 0x0454:
-			case 0x0462:
-				if (s_selectedHelpSubject < 10) {
-					GUI_Mentat_List_Click(GUI_Widget_Get_ByIndex(w, s_selectedHelpSubject + 4));
-					break;
-				}
-
-				GUI_Widget_Scrollbar_ArrowDown_Click(g_widgetMentatScrollbar);
-				break;
-
-			case 0x0055:
-			case 0x0065: /* NUMPAD 9 / PAGE UP */
-			case 0x0455:
-			case 0x0465: {
-				uint8 i;
-				for (i = 0; i < 11; i++) GUI_Widget_Scrollbar_ArrowUp_Click(g_widgetMentatScrollbar);
-			} break;
-
-			case 0x0056:
-			case 0x0067: /* NUMPAD 3 / PAGE DOWN */
-			case 0x0456:
-			case 0x0467: {
-				uint8 i;
-				for (i = 0; i < 11; i++) GUI_Widget_Scrollbar_ArrowDown_Click(g_widgetMentatScrollbar);
-			} break;
-
-			case 0x0041: /* MOUSE LEFT BUTTON */
-				break;
-
-			case 0x002B: /* NUMPAD 5 / RETURN */
-			case 0x003D: /* SPACE */
-			case 0x042B:
-			case 0x043D:
-				GUI_Mentat_List_Click(GUI_Widget_Get_ByIndex(w, s_selectedHelpSubject + 3));
-				break;
-
-			default: break;
-		}
-
-		s_selectMentatHelp = false;
-
-		sleepIdle();
+	if ((asyncGUIMentatHelpListLoop.key & 0x800) != 0) {
+		asyncGUIMentatHelpListLoop.key = 0;
 	}
+
+	if (asyncGUIMentatHelpListLoop.key == 0x8001) return;
+
+	asyncGUIMentatHelpListLoop.key &= 0x80FF;
+
+	s_selectMentatHelp = true;
+
+	switch (asyncGUIMentatHelpListLoop.key) {
+		case 0x0053:
+		case 0x0060: /* NUMPAD 8 / ARROW UP */
+		case 0x0453:
+		case 0x0460:
+			if (s_selectedHelpSubject != 0) {
+				GUI_Mentat_List_Click(GUI_Widget_Get_ByIndex(w, s_selectedHelpSubject + 2));
+				break;
+			}
+
+			GUI_Widget_Scrollbar_ArrowUp_Click(g_widgetMentatScrollbar);
+			break;
+
+		case 0x0054:
+		case 0x0062: /* NUMPAD 2 / ARROW DOWN */
+		case 0x0454:
+		case 0x0462:
+			if (s_selectedHelpSubject < 10) {
+				GUI_Mentat_List_Click(GUI_Widget_Get_ByIndex(w, s_selectedHelpSubject + 4));
+				break;
+			}
+
+			GUI_Widget_Scrollbar_ArrowDown_Click(g_widgetMentatScrollbar);
+			break;
+
+		case 0x0055:
+		case 0x0065: /* NUMPAD 9 / PAGE UP */
+		case 0x0455:
+		case 0x0465: {
+			uint8 i;
+			for (i = 0; i < 11; i++) GUI_Widget_Scrollbar_ArrowUp_Click(g_widgetMentatScrollbar);
+		} break;
+
+		case 0x0056:
+		case 0x0067: /* NUMPAD 3 / PAGE DOWN */
+		case 0x0456:
+		case 0x0467: {
+			uint8 i;
+			for (i = 0; i < 11; i++) GUI_Widget_Scrollbar_ArrowDown_Click(g_widgetMentatScrollbar);
+		} break;
+
+		case 0x0041: /* MOUSE LEFT BUTTON */
+			break;
+
+		case 0x002B: /* NUMPAD 5 / RETURN */
+		case 0x003D: /* SPACE */
+		case 0x042B:
+		case 0x043D:
+			GUI_Mentat_List_Click(GUI_Widget_Get_ByIndex(w, s_selectedHelpSubject + 3));
+			break;
+
+		default: break;
+	}
+
+	s_selectMentatHelp = false;
+
+	sleepIdle();
+}
+
+static void AsyncGUI_Mentat_HelpListLoop()
+{
+	asyncGUIMentatHelpListLoop.key = 0;
+
+	Async_InvokeInLoop(async_noop,
+			GUI_Mentat_HelpListLoopCondition,
+			GUI_Mentat_HelpListLoopLoop,
+			async_noop);
 }
 
 static void GUI_Mentat_LoadHelpSubjects(bool init)
@@ -355,15 +373,30 @@ static void GUI_Mentat_Draw(bool force)
 	GFX_Screen_SetActive(oldScreenID);
 }
 
+uint16 GUI_Mentat_ShowHelpList_oldScreenID;
+
+void GUI_Mentat_ShowHelpList_Close() {
+	free(g_widgetMentatFirst); g_widgetMentatFirst = NULL;
+
+	Load_Palette_Mercenaries();
+
+	GUI_Widget_Free_WithScrollbar(g_widgetMentatScrollbar);
+	g_widgetMentatScrollbar = NULL;
+
+	free(g_widgetMentatScrollUp); g_widgetMentatScrollUp = NULL;
+	free(g_widgetMentatScrollDown); g_widgetMentatScrollDown = NULL;
+
+	Input_Flags_ClearBits(INPUT_FLAG_KEY_REPEAT);
+
+	GFX_Screen_SetActive(GUI_Mentat_ShowHelpList_oldScreenID);
+}
 /**
  * Shows the Help window.
  * @param proceed Display a "Proceed" button if true, "Exit" otherwise.
  */
-static void GUI_Mentat_ShowHelpList(bool proceed)
+static void AsyncGUI_Mentat_ShowHelpList(bool proceed)
 {
-	uint16 oldScreenID;
-
-	oldScreenID = GFX_Screen_SetActive(2);
+	GUI_Mentat_ShowHelpList_oldScreenID = GFX_Screen_SetActive(2);
 
 	Input_Flags_SetBits(INPUT_FLAG_KEY_REPEAT);
 	Input_History_Clear();
@@ -385,21 +418,22 @@ static void GUI_Mentat_ShowHelpList(bool proceed)
 
 	GFX_Screen_SetActive(0);
 
-	GUI_Mentat_HelpListLoop();
+	AsyncGUI_Mentat_HelpListLoop();
+	Async_InvokeAfterAsync(GUI_Mentat_ShowHelpList_Close);
+}
 
-	free(g_widgetMentatFirst); g_widgetMentatFirst = NULL;
+void GUI_Widget_Mentat_Click_Close() {
+	Timer_SetTimer(TIMER_GAME, true);
 
-	Load_Palette_Mercenaries();
+	Driver_Sound_Play(1, 0xFF);
 
-	GUI_Widget_Free_WithScrollbar(g_widgetMentatScrollbar);
-	g_widgetMentatScrollbar = NULL;
+	Sprites_LoadTiles();
 
-	free(g_widgetMentatScrollUp); g_widgetMentatScrollUp = NULL;
-	free(g_widgetMentatScrollDown); g_widgetMentatScrollDown = NULL;
+	g_textDisplayNeedsUpdate = true;
 
-	Input_Flags_ClearBits(INPUT_FLAG_KEY_REPEAT);
+	GUI_DrawInterfaceAndRadar(0);
 
-	GFX_Screen_SetActive(oldScreenID);
+	Music_Play(Tools_RandomRange(0, 5) + 8);
 }
 
 /**
@@ -424,19 +458,8 @@ bool GUI_Widget_Mentat_Click(Widget *w)
 
 	Timer_SetTimer(TIMER_GAME, false);
 
-	GUI_Mentat_ShowHelpList(false);
-
-	Timer_SetTimer(TIMER_GAME, true);
-
-	Driver_Sound_Play(1, 0xFF);
-
-	Sprites_LoadTiles();
-
-	g_textDisplayNeedsUpdate = true;
-
-	GUI_DrawInterfaceAndRadar(0);
-
-	Music_Play(Tools_RandomRange(0, 5) + 8);
+	AsyncGUI_Mentat_ShowHelpList(false);
+	Async_InvokeAfterAsync(GUI_Widget_Mentat_Click_Close);
 
 	return true;
 }
@@ -979,7 +1002,17 @@ void GUI_Mentat_Create_HelpScreen_Widgets()
 	GUI_Widget_Draw(g_widgetMentatFirst);
 }
 
-static void GUI_Mentat_ShowHelp()
+void GUI_Mentat_ShowHelp_Close() {
+	GUI_Widget_MakeNormal(g_widgetMentatFirst, false);
+
+	GUI_Mentat_LoadHelpSubjects(false);
+
+	GUI_Mentat_Create_HelpScreen_Widgets();
+
+	GUI_Mentat_Draw(true);
+}
+
+static void AsyncGUI_Mentat_ShowHelp()
 {
 	struct {
 		uint8  notused[8];
@@ -1043,16 +1076,15 @@ static void GUI_Mentat_ShowHelp()
 		if (*text != '\0') *text++ = '\0';
 	}
 
-	abort();
 	Async_GUI_Mentat_Loop(picture, desc, text, loc12 ? 1 : 0, g_widgetMentatFirst);
+	Async_InvokeAfterAsync(GUI_Mentat_ShowHelp_Close);
+}
 
-	GUI_Widget_MakeNormal(g_widgetMentatFirst, false);
-
-	GUI_Mentat_LoadHelpSubjects(false);
-
-	GUI_Mentat_Create_HelpScreen_Widgets();
-
+void GUI_Mentat_List_Click_Close() {
 	GUI_Mentat_Draw(true);
+
+	Input_HandleInput(0x841);
+	Input_HandleInput(0x842);
 }
 
 /**
@@ -1097,12 +1129,9 @@ bool GUI_Mentat_List_Click(Widget *w)
 
 	GUI_Widget_MakeNormal(w, false);
 
-	GUI_Mentat_ShowHelp();
+	AsyncGUI_Mentat_ShowHelp();
+	Async_InvokeAfterAsync(GUI_Mentat_List_Click_Close);
 
-	GUI_Mentat_Draw(true);
-
-	Input_HandleInput(0x841);
-	Input_HandleInput(0x842);
 	return false;
 }
 

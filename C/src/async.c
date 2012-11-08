@@ -168,8 +168,10 @@ void Async_Storage_uint16(uint16* s_uint16) {
 }
 
 void Async_StorageSet_uint16(uint16 value) {
-	*STACK_STORAGE->s_uint16 = value;
-	STACK_STORAGE = STACK_STORAGE->next;
+	if (STACK_STORAGE) {
+		*STACK_STORAGE->s_uint16 = value;
+		STACK_STORAGE = STACK_STORAGE->next;
+	}
 }
 
 
