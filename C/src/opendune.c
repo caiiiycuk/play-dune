@@ -90,6 +90,8 @@ bool   g_debugSkipDialogs = false; /*!< When non-zero, you immediately go to hou
 void *g_readBuffer = NULL;
 uint32 g_readBufferSize = 0;
 
+uint8 selectedHouseId = HOUSE_ATREIDES;
+
 static const HouseAnimation_Animation   *s_houseAnimation_animation = NULL;   /*!< Animation part of animation data. */
 static const HouseAnimation_Subtitle    *s_houseAnimation_subtitle = NULL;    /*!< Subtitle part of animation data. */
 static const HouseAnimation_SoundEffect *s_houseAnimation_soundEffect = NULL; /*!< Soundeffect part of animation data. */
@@ -147,7 +149,7 @@ static bool GameLoop_IsLevelFinished()
 	if (s_debugForceWin) return true;
 
 	/* You have to play at least 7200 ticks before you can win the game */
-	if (g_timerGame - g_tickScenarioStart < 7200) return false;
+	/*if (g_timerGame - g_tickScenarioStart < 7200) return false;*/
 
 	/* Check for structure counts hitting zero */
 	if ((g_scenario.winFlags & 0x3) != 0) {
@@ -2222,7 +2224,7 @@ static void GameLoop_GameIntroAnimationMenu()
 	if (s_enableLog != 0) Mouse_SetMouseMode((uint8)s_enableLog, "DUNE.LOG");
 
 	if (!loc02) {
-		g_playerHouseID = HOUSE_ATREIDES;
+		g_playerHouseID = selectedHouseId;
 		if (g_playerHouseID == HOUSE_INVALID) {
 			GUI_Mouse_Show_Safe();
 
@@ -2561,6 +2563,16 @@ int main(int argc, char **argv)
 	FreeConsole();
 #endif
 	chdir("/home/caiiiycuk/play-dune/");
+
+	if (argc > 1) {
+		if (argv[1][1] == 'o') {
+			selectedHouseId = HOUSE_ORDOS;
+		}
+
+		if (argv[1][1] == 'h') {
+			selectedHouseId = HOUSE_HARKONNEN;
+		}
+	}
 
 
    if (getcwd(cwd, sizeof(cwd)) != NULL)

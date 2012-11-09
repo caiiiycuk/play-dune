@@ -1,0 +1,41 @@
+%html{:xmlns => "http://www.w3.org/1999/xhtml", "xml:lang" => "en", :lang => "en"}
+	%head
+		%title Dune 2 Online
+		%meta(http-equiv="Content-Type" content="text/html; charset=utf-8")
+		%link(rel="stylesheet" type="text/css" href="/css/style.css")
+	%body
+		%img.dune{src: "/img/dune.png"}
+
+		.dune_title 
+			%h1 Dune 2 The Building of A Dynasty
+			%img.absolute{src: "/img/dune2.png"}
+
+		#status Loading...
+
+		.canvas-container
+			%canvas{id: "canvas"}
+		
+		:javascript
+			// connect to canvas
+			var Module = {
+				fullScreen: false,
+				print: function() {},
+				printErr: function(text) {
+					if (0) { // XXX disabled for safety typeof dump == 'function') {
+						dump(text + '\n'); // fast, straight to the real console
+					} else {
+						console.log(text);
+					}
+				},
+				canvas: document.getElementById('canvas'),
+				setStatus: function(text) {
+					document.getElementById('status').innerHTML = text;
+				},
+				totalDependencies: 0,
+				monitorRunDependencies: function(left) {
+				}
+			};
+
+		%script{src: "js/house.js"}
+		%script{src: "/js/opendune.js"}
+		

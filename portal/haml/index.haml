@@ -1,0 +1,52 @@
+%html{:xmlns => "http://www.w3.org/1999/xhtml", "xml:lang" => "en", :lang => "en"}
+	%head
+		%title Dune 2 Online
+		%meta(http-equiv="Content-Type" content="text/html; charset=utf-8")
+		%link(rel="stylesheet" type="text/css" href="/css/style.css")
+	%body
+		%img.dune{src: "/img/dune.png"}
+		.container
+			.select_house 
+				Select your House
+				%img.absolute{src: "/img/select_your_house.png"}
+			.houses
+				.house
+					%a{href: "/atreides/"}
+						Atreides
+						%img.absolute{src: "/img/atreides.png"}
+				.spacing
+				.house
+					%a{href: "/ordos/"}
+						Ordos
+						%img.absolute{src: "/img/ordos.png"}
+				.spacing					
+				.house
+					%a{href: "/harkonnen/"}
+						Harkonnen
+						%img.absolute{src: "/img/harkonnen.png"}
+			.top
+				Top Commanders 
+				%a{href: "top.php"} ...
+			.scores
+				%ul
+					%li 
+						.score_house.atreides
+							Atreides: 
+						.score_player 
+							— 
+						.score
+							—
+					%li 
+						.score_house.ordos
+							Ordos:
+						.score_player 
+							—
+						.score
+							—
+					%li 
+						.score_house.harkonnen
+							Harkonnen: 
+						.score_player 
+							— 
+						.score
+							—

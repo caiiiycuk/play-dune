@@ -1,0 +1,127 @@
+body {
+	background: #000;
+    font: 1.3em/160% Verdana,sans-serif;
+    color: #c09840;
+}
+
+a {
+	color: white;
+}
+
+.dune {
+	position: fixed;
+	width: 640px;
+	heigth: 288px;
+	right: 0px;
+	bottom: 0px;
+	z-index: -1;
+}
+
+.container {
+	margin: auto;
+}
+
+.select_house {
+	position: relative;
+	width: 259px;
+	margin: 60px auto 90px auto;
+}
+
+.absolute {
+	position: absolute;
+	left: 0px;
+	top: 0px;
+}
+
+.houses {
+	margin: auto;
+	width: 600px;
+}
+
+.house {
+	position: relative;
+	width: 166px;
+	height: 182px;
+	display: inline-block;
+	cursor: pointer;
+}
+
+.spacing {
+	width: 30px;
+	display: inline-block;
+}
+
+.top {
+	margin: 60px auto 10px auto;
+	border-bottom: 1px solid #c09840;
+	width: 600px;
+	text-align: center;
+}
+
+.scores {
+	margin: auto;
+	width: 600px;
+	overflow: hidden;
+}
+
+.scores ul {
+	list-style-type: none;
+	margin: 0px;
+	padding: 0px;
+}
+
+.score_house {
+	display: inline-block;
+	width: 150px;
+}
+
+.score_player {
+	display: inline-block;
+	width: 300px;
+}
+
+.score {
+	display: inline-block;
+	width: 130px;
+	text-align: right;
+}
+
+.atreides {
+	color: #77F;
+}
+
+.ordos {
+	color: #7F7;
+}
+
+.harkonnen {
+	color: #F77;	
+}
+
+.canvas-container {
+	margin: auto;
+	width: 642px;
+	height: 402px;
+    border: 1px solid rgb(20, 20, 20);
+}
+
+#canvas {
+	cursor: none;
+}
+
+#status {
+	width: 600px;
+	margin: 30px auto;
+}
+
+.dune_title {
+	position: relative;
+	width: 619px;
+	height: 123px;
+	margin: 30px auto;
+}
+
+.dune_title h1 {
+	font-size: 1em;
+	text-align: center;
+}
