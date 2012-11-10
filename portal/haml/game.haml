@@ -13,7 +13,7 @@
 		#status Loading...
 
 		.canvas-container
-			%canvas{id: "canvas"}
+			%canvas{ id: "canvas", oncontextmenu: "event.preventDefault()" }
 		
 		:javascript
 			// connect to canvas
