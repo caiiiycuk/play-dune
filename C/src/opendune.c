@@ -61,6 +61,9 @@
 #include "video/video.h"
 #include "wsa.h"
 
+#include <SDL.h>
+#include <sys/time.h>
+
 #if EMSCRIPTEN
 #include <emscripten.h>
 extern void jlog(int);
@@ -149,7 +152,7 @@ static bool GameLoop_IsLevelFinished()
 	if (s_debugForceWin) return true;
 
 	/* You have to play at least 7200 ticks before you can win the game */
-	/*if (g_timerGame - g_tickScenarioStart < 7200) return false;*/
+	if (g_timerGame - g_tickScenarioStart < 7200) return false;
 
 	/* Check for structure counts hitting zero */
 	if ((g_scenario.winFlags & 0x3) != 0) {
@@ -1370,6 +1373,24 @@ static void GameLoop_WonLevelEnd() {
 	Async_InvokeAfterAsync(GameLoop_WonLevelEndStats);
 }
 
+static void GameLoop_RestartAfterLoose() {
+	Sprites_UnloadTiles();
+
+	/*g_scenarioID = GUI_StrategicMap_Show(g_campaignID, false);*/
+
+	g_playerHouse->flags.doneFullScaleAttack = false;
+
+	Sprites_LoadTiles();
+
+	g_gameMode = GM_RESTART;
+	s_debugForceWin = false;
+}
+
+static void GameLoop_LooseLevelEnd() {
+	Async_GUI_Mentat_ShowLose();
+	Async_InvokeAfterAsync(GameLoop_RestartAfterLoose);
+}
+
 /**
  * Checks if the level comes to an end. If so, it shows all end-level stuff,
  *  and prepares for the next level.
@@ -1395,24 +1416,10 @@ static void GameLoop_LevelEnd()
 			Async_GUI_DisplayModalMessage(String_Get_ByIndex(STR_YOU_HAVE_SUCCESSFULLY_COMPLETED_YOUR_MISSION), 0xFFFF);
 			Async_InvokeAfterAsync(GameLoop_WonLevelEnd);
 		} else {
-			/*FIXME: */
-			abort();
 			Sound_Output_Feedback(41);
 
 			Async_GUI_DisplayModalMessage(String_Get_ByIndex(STR_YOU_HAVE_FAILED_YOUR_MISSION), 0xFFFF);
-
-			GUI_Mentat_ShowLose();
-
-			Sprites_UnloadTiles();
-
-			/*g_scenarioID = GUI_StrategicMap_Show(g_campaignID, false);*/
-
-			g_playerHouse->flags.doneFullScaleAttack = false;
-
-			Sprites_LoadTiles();
-
-			g_gameMode = GM_RESTART;
-			s_debugForceWin = false;
+			Async_InvokeAfterAsync(GameLoop_LooseLevelEnd);
 		}
 	}
 
@@ -2332,10 +2339,80 @@ void switchToNormalGameAfterRestart() {
 	Music_Play(Tools_RandomRange(0, 8) + 8);
 }
 
+void moveMapByKeys() {
+	uint8 *keystate = SDL_GetKeyState(NULL);
+	bool left = keystate[SDLK_LEFT];
+	bool up = keystate[SDLK_UP];
+	bool right = keystate[SDLK_RIGHT];
+	bool down = keystate[SDLK_DOWN];
+	bool tab = keystate[SDLK_TAB];
+
+	static struct timeval moveTime = {0, 0};
+	static struct timeval tabTime = {0, 0};
+	struct timeval now;
+
+    gettimeofday(&now, NULL);
+    if (moveTime.tv_sec != 0 && (now.tv_sec - moveTime.tv_sec) * 1000
+    		+ (now.tv_usec  - moveTime.tv_usec)/1000.0 < 50) {
+    	return;
+    }
+    gettimeofday(&moveTime, NULL);
+
+    if (tab) {
+    	if (tabTime.tv_sec != 0 && (now.tv_sec - tabTime.tv_sec) * 1000
+        		+ (now.tv_usec  - tabTime.tv_usec)/1000.0 < 300) {
+        	return;
+        }
+        gettimeofday(&tabTime, NULL);
+    	Map_SelectNext(true);
+    }
+
+	if (left && up) {
+		Map_MoveDirection(7);
+		return;
+	}
+
+	if (left && down) {
+		Map_MoveDirection(5);
+		return;
+	}
+
+	if (right && up) {
+		Map_MoveDirection(1);
+		return;
+	}
+
+	if (right && down) {
+		Map_MoveDirection(3);
+		return;
+	}
+
+	if (left) {
+		Map_MoveDirection(6);
+		return;
+	}
+
+	if (right) {
+		Map_MoveDirection(2);
+		return;
+	}
+
+	if (up) {
+		Map_MoveDirection(0);
+		return;
+	}
+
+	if (down) {
+		Map_MoveDirection(4);
+		return;
+	}
+}
+
 static void LoopMain() {
 	static uint32 l_timerNext = 0;
 	static uint32 l_timerUnitStatus = 0;
 	static int16  l_selectionState = -2;
+
 
 	if (Async_IsPending()) {
 		Async_Loop();
@@ -2430,7 +2507,11 @@ static void LoopMain() {
 
 		GUI_Widget_ActionPanel_Draw(false);
 
-		InGame_Numpad_Move(key);
+		moveMapByKeys();
+
+		/*{
+			InGame_Numpad_Move(key);
+		}*/
 
 		GUI_DrawCredits(g_playerHouseID, 0);
 

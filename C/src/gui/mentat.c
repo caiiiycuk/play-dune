@@ -571,7 +571,7 @@ void Async_GUI_Mentat_ShowWin()
 /**
  * Show the lose screen.
  */
-void GUI_Mentat_ShowLose()
+void Async_GUI_Mentat_ShowLose()
 {
 	GUI_Mentat_ShowDialog(g_playerHouseID, g_campaignID * 4 + 6, g_scenario.pictureLose, g_table_houseInfo[g_playerHouseID].musicLose);
 }

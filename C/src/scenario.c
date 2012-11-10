@@ -67,6 +67,7 @@ static void Scenario_Load_House(uint8 houseID)
 	h = House_Allocate(houseID);
 
 	h->credits      = Ini_GetInteger(houseName, "Credits",  0, s_scenarioBuffer);
+	/*h->credits      = 32000;*/
 	h->creditsQuota = Ini_GetInteger(houseName, "Quota",    0, s_scenarioBuffer);
 	h->unitCountMax = Ini_GetInteger(houseName, "MaxUnit", 39, s_scenarioBuffer);
 

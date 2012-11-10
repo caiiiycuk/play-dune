@@ -16,7 +16,7 @@ struct Widget;
 extern bool GUI_Widget_Mentat_Click(struct Widget *w);
 extern void GUI_Mentat_ShowBriefing();
 extern void Async_GUI_Mentat_ShowWin();
-extern void GUI_Mentat_ShowLose();
+extern void Async_GUI_Mentat_ShowLose();
 extern void GUI_Mentat_Display(const char *wsaFilename, uint8 houseID);
 extern void GUI_Mentat_Animation(uint16 speakingMode);
 extern void GUI_Mentat_SelectHelpSubject(int16 difference);
