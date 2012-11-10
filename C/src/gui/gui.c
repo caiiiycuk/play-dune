@@ -3968,6 +3968,8 @@ void GUI_Screen_FadeIn2(int16 x, int16 y, int16 width, int16 height, uint16 scre
  */
 void GUI_Mouse_Show()
 {
+#if EMSCRIPTEN
+#else
 	int left, top;
 
 	if (g_var_7097 == 1) return;
@@ -3990,6 +3992,7 @@ void GUI_Mouse_Show()
 	}
 
 	GUI_DrawSprite(0, g_mouseSprite, left, top, 0, 0);
+#endif
 }
 
 /**
@@ -3998,6 +4001,8 @@ void GUI_Mouse_Show()
  */
 void GUI_Mouse_Hide()
 {
+#if EMSCRIPTEN
+#else
 	if (g_var_7097 == 1) return;
 
 	if (g_mouseHiddenDepth == 0 && s_mouseSpriteWidth != 0) {
@@ -4009,6 +4014,7 @@ void GUI_Mouse_Hide()
 	}
 
 	g_mouseHiddenDepth++;
+#endif
 }
 
 /**
@@ -4017,6 +4023,8 @@ void GUI_Mouse_Hide()
  */
 void GUI_Mouse_Hide_Safe()
 {
+#if EMSCRIPTEN
+#else
 	while (g_mouseLock != 0) sleepIdle();
 	g_mouseLock++;
 
@@ -4028,6 +4036,7 @@ void GUI_Mouse_Hide_Safe()
 	GUI_Mouse_Hide();
 
 	g_mouseLock--;
+#endif
 }
 
 /**
@@ -4036,6 +4045,8 @@ void GUI_Mouse_Hide_Safe()
  */
 void GUI_Mouse_Show_Safe()
 {
+#if EMSCRIPTEN
+#else
 	while (g_mouseLock != 0) sleepIdle();
 	g_mouseLock++;
 
@@ -4047,6 +4058,7 @@ void GUI_Mouse_Show_Safe()
 	GUI_Mouse_Show();
 
 	g_mouseLock--;
+#endif
 }
 
 /**
@@ -4055,6 +4067,8 @@ void GUI_Mouse_Show_Safe()
  */
 void GUI_Mouse_Show_InRegion()
 {
+#if EMSCRIPTEN
+#else
 	uint8 counter;
 
 	while (g_mouseLock != 0) sleepIdle();
@@ -4073,6 +4087,7 @@ void GUI_Mouse_Show_InRegion()
 
 	g_regionFlags = 0;
 	g_mouseLock--;
+#endif
 }
 
 /**
@@ -4082,6 +4097,8 @@ void GUI_Mouse_Show_InRegion()
  */
 void GUI_Mouse_Hide_InRegion(uint16 left, uint16 top, uint16 right, uint16 bottom)
 {
+#if EMSCRIPTEN
+#else
 	int minx, miny;
 	int maxx, maxy;
 
@@ -4126,6 +4143,7 @@ void GUI_Mouse_Hide_InRegion(uint16 left, uint16 top, uint16 right, uint16 botto
 	g_regionFlags = (g_regionFlags & 0xFF00) | (((g_regionFlags & 0x00FF) + 1) & 0xFF);
 
 	g_mouseLock--;
+#endif
 }
 
 /**
@@ -4134,7 +4152,10 @@ void GUI_Mouse_Hide_InRegion(uint16 left, uint16 top, uint16 right, uint16 botto
  */
 void GUI_Mouse_Show_InWidget()
 {
+#if EMSCRIPTEN
+#else
 	GUI_Mouse_Show_InRegion();
+#endif
 }
 
 /**
@@ -4145,6 +4166,8 @@ void GUI_Mouse_Show_InWidget()
  */
 void GUI_Mouse_Hide_InWidget(uint16 widgetIndex)
 {
+#if EMSCRIPTEN
+#else
 	uint16 left, top;
 	uint16 width, height;
 
@@ -4154,6 +4177,7 @@ void GUI_Mouse_Hide_InWidget(uint16 widgetIndex)
 	height = g_widgetProperties[widgetIndex].height;
 
 	GUI_Mouse_Hide_InRegion(left, top, left + width - 1, top + height - 1);
+#endif
 }
 
 /**
@@ -4219,6 +4243,8 @@ void GUI_DrawBlockedRectangle(int16 left, int16 top, int16 width, int16 height, 
  */
 void GUI_Mouse_SetPosition(uint16 x, uint16 y)
 {
+#if EMSCRIPTEN
+#else
 	while (g_mouseLock != 0) sleepIdle();
 	g_mouseLock++;
 
@@ -4238,6 +4264,7 @@ void GUI_Mouse_SetPosition(uint16 x, uint16 y)
 	}
 
 	g_mouseLock--;
+#endif
 }
 
 /**
