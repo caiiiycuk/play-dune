@@ -50,6 +50,11 @@
 
 #include "../async.h"
 
+#if EMSCRIPTEN
+extern uint16 g_campaignID;
+extern void pushStats(uint16 g_campaignID, uint16 houseId, uint16 killed, uint16 destroyed, uint16 harvested, uint16 score);
+#endif
+
 MSVC_PACKED_BEGIN
 typedef struct ClippingArea {
 	/* 0000(2)   */ PACK uint16 left;                       /*!< ?? */
@@ -1520,6 +1525,10 @@ void async_GUI_EndStats_ShowOpen() {
 	s_ticksPlayed = ((g_timerGame - g_tickScenarioStart) / 3600) + 1;
 
 	asyncEndStatsShow.score = Update_Score(asyncEndStatsShow.score, &asyncEndStatsShow.harvestedAllied, &asyncEndStatsShow.harvestedEnemy, asyncEndStatsShow.houseID);
+
+#if EMSCRIPTEN
+	pushStats(g_campaignID, asyncEndStatsShow.houseID, asyncEndStatsShow.killedAllied, asyncEndStatsShow.destroyedAllied, asyncEndStatsShow.harvestedAllied, asyncEndStatsShow.score);
+#endif
 
 	loc16 = (g_scenarioID == 1) ? 2 : 3;
 

@@ -129,6 +129,26 @@ var _js_music_play = function(index) {
 };
 
 //--
+//  STATS
+//--
+
+function _pushStats(g_campaignID, houseId, killed, destroyed, harvested, score) {
+  var scores = {
+    campaign: g_campaignID,
+    house: houseId,
+    killed: killed,
+    destroyed: destroyed,
+    harvested: harvested,
+    score: score,
+    player: Module['UUID']
+  };
+
+  var xhr = new XMLHttpRequest();
+  xhr.open("POST", "http://play-dune.com/stats.php", true);
+  xhr.send(JSON.stringify(scores));
+}
+
+//--
 // Other
 //--
 function _jlog(num) {
