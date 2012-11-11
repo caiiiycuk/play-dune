@@ -66,9 +66,6 @@
 
 #if EMSCRIPTEN
 #include <emscripten.h>
-extern void jlog(int);
-#else
-void jlog(int x) { (void) x; }
 #endif
 
 #include "async.h"
@@ -2009,29 +2006,19 @@ static void GameLoop_GameIntroAnimationMenu()
 
 	Sprites_SetMouseSprite(0, 0, g_sprites[0]);
 
-	jlog(1002);
 	while (g_mouseHiddenDepth > 1) {
-		jlog(1003);
 		GUI_Mouse_Show_Safe();
 	}
-	jlog(1004);
 
 	Window_WidgetClick_Create();
-	jlog(2001);
 	GameOptions_Load();
-	jlog(2002);
 	Unit_Init();
-	jlog(2003);
 	Team_Init();
-	jlog(2004);
 	House_Init();
-	jlog(2005);
 	Structure_Init();
-	jlog(2006);
 	loc06 = true;
 
 	GUI_Mouse_Show_Safe();
-	jlog(1005);
 
 	if (!g_debugSkipDialogs && false) {
 		uint16 stringID;
@@ -2051,7 +2038,6 @@ static void GameLoop_GameIntroAnimationMenu()
 
 		while (true) {
 			char *strings[6];
-			jlog(1006);
 
 			switch (stringID) {
 				case STR_REPLAY_INTRODUCTION:
@@ -2201,7 +2187,6 @@ static void GameLoop_GameIntroAnimationMenu()
 
 			if (stringID == STR_PLAY_A_GAME) break;
 
-			jlog(1001);
 			sleepIdle();
 		}
 	} else {
@@ -2539,19 +2524,13 @@ static void LoopMain() {
  */
 static void GameLoop_Main()
 {
-jlog(6);
 	String_Init();
-jlog(7);	
 	Sprites_Init();
-jlog(8);
 	GameLoop_GameIntroAnimationMenu();
-jlog(9);
 	Timer_SetTimer(TIMER_GAME, true);
-jlog(10);
 	GUI_Mouse_Show_Safe();
-jlog(11);
 	Music_Play(Tools_RandomRange(0, 5) + 8);
-jlog(12);
+
 #if EMSCRIPTEN
 	emscripten_set_main_loop(LoopMain, 0, false);
 #else
@@ -2559,20 +2538,15 @@ jlog(12);
 		LoopMain();
 	}
 #endif
+
 	return;
-jlog(13);
+
 	GUI_Mouse_Hide_Safe();
-jlog(14);
 	if (s_enableLog != 0) Mouse_SetMouseMode(INPUT_MOUSE_MODE_NORMAL, "DUNE.LOG");
-jlog(15);
 	GUI_Mouse_Hide_Safe();
-jlog(16);
 	Widget_SetCurrentWidget(0);
-jlog(17);
 	GFX_Screen_SetActive(2);
-jlog(18);
 	GFX_ClearScreen();
-jlog(19);
 	GUI_Screen_FadeIn(g_curWidgetXBase, g_curWidgetYBase, g_curWidgetXBase, g_curWidgetYBase, g_curWidgetWidth, g_curWidgetHeight, 2, 0);
 }
 
@@ -2671,15 +2645,12 @@ int main(int argc, char **argv)
 		Error("Missing dune.cfg file.\n");
 		exit(1);
 	}
-jlog(1);
+
 	Input_Init();
-jlog(2);
 	Drivers_All_Init();
-jlog(3);
 	if (!Unknown_25C4_000E()) exit(1);
 
 	g_var_7097 = 0;
-jlog(4);
 	GameLoop_Main();
 /*
 	printf("%s\n", String_Get_ByIndex(STR_THANK_YOU_FOR_PLAYING_DUNE_II));

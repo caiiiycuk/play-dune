@@ -8,6 +8,7 @@
 #include "types.h"
 #include "os/sleep.h"
 #include "timer.h"
+#include <stdio.h>
 
 
 uint32 g_timerGUI = 0;                                      /*!< Tick counter. Increases with 1 every tick when Timer 1 is enabled. Used for GUI. */
@@ -54,6 +55,22 @@ void Timer_InterruptRun()
 
 	/* Lock the timer, to avoid double-calls */
 	static bool timerLock = false;
+
+	static struct timeval interruptTime = {0, 0};
+	struct timeval now;
+    gettimeofday(&now, NULL);
+
+    if (interruptTime.tv_sec != 0 && (now.tv_sec - interruptTime.tv_sec) * 1000 * 1000
+    		+ (now.tv_usec  - interruptTime.tv_usec) < 10000) {
+    	return;
+    }
+/*
+    printf("%d\n", (now.tv_sec - interruptTime.tv_sec) * 1000 * 1000
+    		+ (now.tv_usec  - interruptTime.tv_usec));
+*/
+    gettimeofday(&interruptTime, NULL);
+
+
 	if (timerLock) return;
 	timerLock = true;
 

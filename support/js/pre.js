@@ -147,10 +147,3 @@ function _pushStats(g_campaignID, houseId, killed, destroyed, harvested, score) 
   xhr.open("POST", "http://play-dune.com/stats.php", true);
   xhr.send(JSON.stringify(scores));
 }
-
-//--
-// Other
-//--
-function _jlog(num) {
-	console.log(num);
-}
