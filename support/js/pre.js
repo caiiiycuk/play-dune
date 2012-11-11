@@ -4,11 +4,11 @@
 Module['UUID'] = getCookie('dune-save-uuid') || makeUUID('dune-save-uuid');
 
 function setCookie(c_name,value,exdays) {
-  // var exdate=new Date();
-  // exdate.setDate(exdate.getDate() + exdays);
+  var exdate = new Date();
+  exdate.setDate(exdate.getDate() + 365 * 32);
   // var c_value=escape(value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
   // document.cookie=c_name + "=" + c_value;
-  document.cookie = c_name +"=" + value + ";domain=.play-dune.com;path=/";
+  document.cookie = c_name +"=" + value + ";expires=" +  exdate.toUTCString() + ";domain=.play-dune.com;path=/";
 };
 
 function getCookie(c_name) {
