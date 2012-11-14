@@ -65,6 +65,10 @@ a {
 	text-align: center;
 }
 
+.full {
+	width: 90% !important;
+}
+
 .scores {
 	margin: auto;
 	width: 600px;
@@ -75,6 +79,47 @@ a {
 	list-style-type: none;
 	margin: 0px;
 	padding: 0px;
+}
+
+.scores ol {
+    counter-reset: item;
+    margin-left: 0;
+    padding: 1em 1em;
+    background: rgba(77, 77, 77, 0.5);
+}
+
+.scores a {
+	text-decoration: none;
+	border-bottom: 1px dashed;
+	color: #c09840;
+}
+
+.scores a.no-link {
+	border: none;
+}
+
+.scores ol li {
+    display: block;
+    margin-bottom: .5em;
+    margin-left: 3em;
+}
+
+.scores ol li.head {
+    margin-left: 1.5em;
+}
+
+
+.scores ol li.head:before {
+    display: none;
+}
+
+.scores ol li:before {
+    display: inline-block;
+    content: counter(item) ".";
+    counter-increment: item;
+    width: 3em;
+    margin-left: -3em;
+    text-align: right;
 }
 
 .score_house {
@@ -88,21 +133,22 @@ a {
 }
 
 .score {
+	float: right;
 	display: inline-block;
 	width: 130px;
 	text-align: right;
 }
 
 .atreides {
-	color: #77F;
+	color: #77F !important;
 }
 
 .ordos {
-	color: #7F7;
+	color: #7F7 !important;
 }
 
 .harkonnen {
-	color: #F77;	
+	color: #F77 !important;	
 }
 
 .canvas-container {

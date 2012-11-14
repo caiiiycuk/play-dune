@@ -32,3 +32,5 @@ print `cp $src/js/opendune.data $dst/ordos/opendune.data`;
 print `cp $src/js/opendune.data $dst/harkonnen/opendune.data`;
 
 print `cp $src/js/opendune.js $dst/js/opendune.js`;
+
+print `cp -rv $src/php/* $dst`;
