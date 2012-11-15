@@ -18,7 +18,7 @@ print `cp -rv $src/img $dst/img`;
 print `cp -rv $src/css $dst/css`;
 print `cp -rv $src/music $dst/music`;
 
-print `haml $src/haml/index.haml $dst/index.html`;
+#print `haml $src/haml/index.haml $dst/index.html`;
 print `haml $src/haml/game.haml $dst/atreides/index.html`;
 print `haml $src/haml/game.haml $dst/ordos/index.html`;
 print `haml $src/haml/game.haml $dst/harkonnen/index.html`;

@@ -58,7 +58,7 @@ a {
 	display: inline-block;
 }
 
-.top {
+.top, .underline {
 	margin: 60px auto 10px auto;
 	border-bottom: 1px solid #c09840;
 	width: 600px;
@@ -69,7 +69,7 @@ a {
 	width: 90% !important;
 }
 
-.scores {
+.scores, .default {
 	margin: auto;
 	width: 600px;
 	overflow: hidden;
@@ -94,8 +94,10 @@ a {
 	color: #c09840;
 }
 
-.scores a.no-link {
+a.no-link {
 	border: none;
+	text-decoration: none;
+	color: #c09840;
 }
 
 .scores ol li {
@@ -132,11 +134,19 @@ a {
 	width: 300px;
 }
 
+.score_player_big {
+	display: inline-block;
+	width: 450px;
+}
+
 .score {
-	float: right;
 	display: inline-block;
 	width: 130px;
 	text-align: right;
+}
+
+.score-right {
+	float: right; 
 }
 
 .atreides {
@@ -173,4 +183,58 @@ a {
 .dune_title h1 {
 	font-size: 1em;
 	text-align: center;
+}
+
+a.edit {
+	background: url('../img/edit.png');
+	width: 16px;
+	height: 16px;
+	display: inline-block;
+	text-decoration: none;
+	border: none;
+	margin: 0px;
+}
+
+.form form {
+	width: 100%;
+}
+
+.form input {
+	margin: 5px 5px 15px 15px;
+	border-radius: 3px;
+	border: 1px solid #ada9a5;
+	padding: 4px;
+	box-shadow: inset 0 0 3px #f1f0ef;
+	outline: none;
+	font-size: 1em;
+}
+
+.form input[type="text"],
+.form input[type="password"] {
+	display: inline-block;
+	width: 400px;
+}
+
+.form input:focus {
+	border: 1px solid #cd5728;
+	box-shadow: inset 0 0 3px #ffcfbc;
+}
+
+button {
+    font-size: 1em;
+    padding: 5px 20px;
+    background: none repeat scroll 0% 0% rgb(234, 236, 234) !important;
+    color: rgb(34, 34, 34) !important;
+    border-radius: 5px 5px 5px 5px;
+    border: 1px solid rgb(170, 170, 170);
+    box-shadow: 0px 1px 0px rgba(255, 255, 255, 0.4) inset, 0px 1px 1px rgba(0, 0, 0, 0.2);
+    -moz-transition-duration: 0.2s;
+    -moz-user-select: none;
+    cursor: pointer;
+    text-decoration: underline;
+    font-weight: bold;
+}
+
+.green-button {
+	background: none repeat scroll 0% 0% rgb(134, 234, 134) !important;
 }

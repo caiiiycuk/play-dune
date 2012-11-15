@@ -1,6 +1,11 @@
 <?php
 include 'config.php';
 include 'helper.php';
+
+if ( isset($_POST['name']) ) {
+  update_player_name($_POST['name']);
+}
+
 ?>
 
 <html lang='en' xml:lang='en' xmlns='http://www.w3.org/1999/xhtml'>
@@ -17,48 +22,30 @@ include 'helper.php';
       </div>
       <div class='scores full'>
         <ol>
-			<li class="head">
-				<div class='score_player'><a href="#<?=$player?>">Locate myself</a></div>
-				<div class='score'><a href="top.php">Score</a></div>
-				<div class='score'><a href="top.php?sort=harvested">Harvested</a></div>
-				<div class='score'><a href="top.php?sort=destroyed">Destroyed</a></div>
-				<div class='score'><a href="top.php?sort=killed">Killed</a></div>
-			</li>
-
-<?php 
-$sort 	= get_sort_column($_GET['sort']);
-$sql 	= get_sql_top($sort);
-
-$mysqli = new mysqli($db_host, $db_user, $db_password, $db_db);
-$result = $mysqli->query($sql);
-
-while ($row = $result->fetch_object()){
-	$house = get_house($row->house);
-	$name = $row->name;
-
-	if ($row->player == $player)  {
-		$name = "(YOU) " . $name;
-	}
-
-    echo "
-<li>
-	<div class='score_player'><a class='no-link $house' id='$row->player'>$name</a></div>
-	<div class='score $house'>$row->score</div>
-	<div class='score $house'>$row->harvested</div>
-	<div class='score $house'>$row->destroyed</div>
-	<div class='score $house'>$row->killed</div>
-</li>	
-";
-}
-
-$result->close();
-
-$mysqli->close();
-
-?>
+    			<li class="head">
+    				<div class='score_player'><a href="#<?=$player?>">Locate myself</a></div>
+    				<div class='score score-right'><a href="top.php">Score</a></div>
+    				<div class='score score-right'><a href="top.php?sort=harvested">Harvested</a></div>
+    				<div class='score score-right'><a href="top.php?sort=destroyed">Destroyed</a></div>
+    				<div class='score score-right'><a href="top.php?sort=killed">Killed</a></div>
+    			</li>
+          <?  render_top_html( isset($_GET['sort']) ? $_GET['sort'] : '' ); ?>
         </ol>
       </div>
     </div>
+
+    <div class='underline full'>
+      <a id="personal" class="no-link">Personal</a>
+    </div>
+
+    <div class="default full">
+      <form class="form" action="top.php" method="POST">
+        Your name:
+        <input name="name" type="text" value="<?=$playerName?>"></input>
+        <button class="green-button" type="submit">Change</button>
+      </form>
+    </div>
+
     <audio autoplay='autoplay loop'>
       <source src='/music/28.ogg' type='audio/ogg'></source>
     </audio>
