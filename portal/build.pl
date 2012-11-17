@@ -15,6 +15,7 @@ print `mkdir $dst/ordos/js`;
 print `mkdir $dst/harkonnen/js`;
 
 print `cp -rv $src/img $dst/img`;
+print `cp $src/img/favicon.ico $dst/favicon.ico`;
 print `cp -rv $src/css $dst/css`;
 print `cp -rv $src/music $dst/music`;
 
