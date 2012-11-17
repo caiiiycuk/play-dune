@@ -699,10 +699,10 @@ void AsyncGUI_Widget_Options_ClickLoop() {
 
 			case 3:
 				/* "Are you sure you wish to restart?" */
-				/*if (!GUI_YesNo(0x76)) break;
+				/*if (!GUI_YesNo(0x76)) break;*/
 
 				asyncGUIWidgetOptionsClick.loop = false;
-				g_gameMode = GM_RESTART;*/
+				g_gameMode = GM_RESTART;
 				break;
 
 			case 4:
