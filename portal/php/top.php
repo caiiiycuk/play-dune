@@ -45,7 +45,7 @@ if ( isset($_POST['name']) ) {
         <ol>
     			<li class="head">
     				<div class='score_player'><a href="#<?=$player?>">Locate myself</a></div>
-    				<div class='score score-right'><a href="top.php">Score</a></div>
+    				<div class='score score-right'><a href="top.php">Max score</a></div>
     				<div class='score score-right'><a href="top.php?sort=harvested">Harvested</a></div>
     				<div class='score score-right'><a href="top.php?sort=destroyed">Destroyed</a></div>
     				<div class='score score-right'><a href="top.php?sort=killed">Killed</a></div>

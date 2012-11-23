@@ -3,14 +3,14 @@
 function get_sort_column($key) {
 	switch ($key) {
 	    case 'harvested':
-	        return 'harvested';
+	        return 'sum(s.harvested)';
 	    case 'destroyed':
-	        return 'destroyed';
+	        return 'sum(s.destroyed)';
 	    case 'killed':
-	        return 'killed';
+	        return 'sum(s.killed)';
 	}
 
-	return 'score';
+	return 'max(s.score)';
 }
 
 function get_sql_top($sort) {
@@ -18,7 +18,7 @@ function get_sql_top($sort) {
 "select 
 	s.player player, coalesce(p.name, s.player) name, 
 	s.house house, sum(s.killed) killed, sum(s.destroyed) destroyed, sum(s.harvested) harvested, 
-	sum(s.score) score 
+	max(s.score) score 
 from 
 	scores s 
 left join 
@@ -26,13 +26,13 @@ left join
 group by 
 	s.player, s.house 
 order by 
-	sum(s.$sort) desc, s.player, s.house;";
+	$sort desc, s.player, s.house;";
 }
 
 function get_sql_best($house) {
 	return
 "select 
-	coalesce(p.name, s.player) name, sum(s.score) score 
+	coalesce(p.name, s.player) name, max(s.score) score 
 from 
 	scores s 
 left join 
@@ -42,7 +42,7 @@ where
 group by 
 	s.player, s.house 
 order by 
-	sum(s.score) desc
+	max(s.score) desc
 limit 1;";	
 }
 
