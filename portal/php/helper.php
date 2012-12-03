@@ -13,7 +13,7 @@ function get_sort_column($key) {
 	return 'max(s.score)';
 }
 
-function get_sql_top($sort) {
+function get_sql_top($sort, $where) {
 	return 
 "select 
 	s.player player, coalesce(p.name, s.player) name, 
@@ -23,6 +23,8 @@ from
 	scores s 
 left join 
 	players p on p.player = s.player 
+where 
+  $where 
 group by 
 	s.player, s.house 
 order by 
@@ -35,7 +37,7 @@ function get_sql_best($house) {
 	coalesce(p.name, s.player) name, max(s.score) score 
 from 
 	scores s 
-left join 
+inner join 
 	players p on p.player = s.player 
 where
 	s.house = $house	
@@ -88,13 +90,14 @@ function render_top_3_html() {
 
   $result = $mysqli->query($atreides);
   if ($row = $result->fetch_object()){
+    $name = warpName($row->name);
     echo 
 "<li>
 <div class='score_house atreides'>
   Atreides:
 </div>
 <div class='score_player atreides'>
-	$row->name
+	$name
 </div>
 <div class='score atreides'>
 	$row->score
@@ -105,13 +108,14 @@ function render_top_3_html() {
 
   $result = $mysqli->query($ordos);
   if ($row = $result->fetch_object()){
+    $name = warpName($row->name);
     echo 
 "<li>
 <div class='score_house ordos'>
   Ordos:
 </div>
 <div class='score_player ordos'>
-	$row->name
+	$name
 </div>
 <div class='score ordos'>
 	$row->score
@@ -122,13 +126,14 @@ function render_top_3_html() {
 
   $result = $mysqli->query($harkonnen);
   if ($row = $result->fetch_object()){
+    $name = warpName($row->name);
     echo 
 "<li>
 <div class='score_house harkonnen'>
   Harkonnen:
 </div>
 <div class='score_player harkonnen'>
-	$row->name
+	$name
 </div>
 <div class='score harkonnen'>
 	$row->score
@@ -140,7 +145,20 @@ function render_top_3_html() {
   $mysqli->close();
 }
 
+function warpName($name) {
+  if (strlen($name) > 25) {
+    $name = substr($name, 0, 25) . '...';
+  }
+
+  return $name;
+}
+
 function render_top_html($sortType) {
+  render_top_html_core($sortType, 'p.name is not null');
+  render_top_html_core($sortType, 'p.name is null');
+}
+
+function render_top_html_core($sortType, $where) {
   global $db_host;
   global $db_user;
   global $db_password;
@@ -149,7 +167,7 @@ function render_top_html($sortType) {
   global $playerName;
 
   $sort = get_sort_column($sortType);
-  $sql  = get_sql_top($sort);
+  $sql  = get_sql_top($sort, $where);
 
   $mysqli = new mysqli($db_host, $db_user, $db_password, $db_db);
   $result = $mysqli->query($sql);
@@ -160,10 +178,12 @@ function render_top_html($sortType) {
     $editlink = '';
 
     if ($row->player == $player)  {
-		$playerName = $name;
-		$name = "(YOU) " . $name;
-		$editlink = "<a class='edit' href='#personal' ></a>";
+		  $playerName = $name;
+		  $name = "(YOU) " . $name;
+		  $editlink = "<a class='edit' href='#personal' ></a>";
     }
+
+    $name = warpName($name);
 
       echo "
   <li>
