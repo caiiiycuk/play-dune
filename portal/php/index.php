@@ -72,14 +72,20 @@ include 'helper.php';
       <source src='/music/28.ogg' type='audio/ogg'></source>
     </audio>
 
-    <div class="footer right">
+    <div class="footer left">
       Powered by <a href="http://www.opendune.org/" target="_blank">OpenDune</a>, <a href="https://github.com/kripken/emscripten/" target="_blank">Emscripten</a>
       <br/>
        © Aleksander Guryanov <a href="https://github.com/caiiiycuk/play-dune" target="_blank">Feedback</a>
     </div>
 
-    <div class="footer left">
-      
+    <div class="footer right">
+      <form action="https://www.paypal.com/cgi-bin/webscr" method="post">
+      <input type="hidden" name="cmd" value="_s-xclick">
+      <input type="hidden" name="encrypted" value="-----BEGIN PKCS7-----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-----END PKCS7-----
+      ">
+      <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
+      <img alt="" border="0" src="https://www.paypalobjects.com/ru_RU/i/scr/pixel.gif" width="1" height="1">
+      </form>
     </div>
 
   </body>

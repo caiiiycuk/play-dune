@@ -253,6 +253,11 @@ button {
 	text-decoration: none;
 }
 
+.footer form {
+	margin: auto;
+	padding-top: 10px;
+}
+
 .right {
 	right: 0px;
 }
