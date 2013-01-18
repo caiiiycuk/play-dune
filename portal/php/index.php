@@ -67,17 +67,42 @@ include 'helper.php';
           <? render_top_3_html(); ?>
         </ul>
       </div>
+      <div class="google-ads">
+        <script type="text/javascript"><!--
+        google_ad_client = "ca-pub-9186880238664597";
+        /* Dune 2 Unit */
+        google_ad_slot = "6856758966";
+        google_ad_width = 468;
+        google_ad_height = 15;
+        //-->                                                                                                                                                                         
+        </script>
+        <script type="text/javascript"
+        src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+        </script>
+        <br/><br/>
+        <script type="text/javascript"><!--
+          google_ad_client = "ca-pub-9186880238664597";
+        /* Dune 2 Block */
+        google_ad_slot = "6437956567";
+        google_ad_width = 468;
+        google_ad_height = 60;
+        //-->                                                                                                                                                                         
+        </script>
+        <script type="text/javascript"
+        src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+        </script>
+      </div>      
     </div>
     <audio autoplay='autoplay'>
       <source src='/music/28.ogg' type='audio/ogg'></source>
     </audio>
 
-    <div class="footer left">
+    <div class="footer right">
       Powered by <a href="http://www.opendune.org/" target="_blank">OpenDune</a>, <a href="https://github.com/kripken/emscripten/" target="_blank">Emscripten</a>
       <br/>
        © Aleksander Guryanov <a href="https://github.com/caiiiycuk/play-dune" target="_blank">Feedback</a>
     </div>
-
+<!--
     <div class="footer right">
       <form action="https://www.paypal.com/cgi-bin/webscr" method="post">
       <input type="hidden" name="cmd" value="_s-xclick">
@@ -89,6 +114,6 @@ include 'helper.php';
 
       <iframe allowtransparency="true" src="https://money.yandex.ru/embed/small.xml?uid=41001419739511&amp;button-text=06&amp;button-size=s&amp;button-color=black&amp;targets=dune+2+online+game&amp;default-sum=50" frameborder="0" height="31" scrolling="no" width="150px"></iframe>
     </div>
-
+-->
   </body>
 </html>
