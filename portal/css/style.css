@@ -272,8 +272,22 @@ button {
 	top: 0px;
 }
 
-
 .google-ads {
     width: 468px;
     margin: 40px auto 0px auto;
+}
+
+.width640 {
+	width: 640px;
+}
+
+#mute {
+	background: url('../img/mute.png');
+	width: 32px;
+	height: 32px;
+	display: inline-block;
+	text-decoration: none;
+	border: none;
+	margin: 0px;
+	cursor: pointer;
 }
