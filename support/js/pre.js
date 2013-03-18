@@ -28,9 +28,9 @@ Module['preRun'] = function() {
   SDL.defaults.copyOnLock = false;
   
   var saves = Object.keys(Engine['saves']);
-  for (var i = 0; i < saves.length; ++i) {
-    var file = saves[i];
-    var url = Engine['saves'][file];
+  for (var i = 1; i < 10; ++i) {
+    var file = '_save00' + i + '.dat';
+    var url = '/save/' + Module['UUID'] + '/' + file;
 
     Module["FS_createPreloadedFile"]
       ('/home/caiiiycuk/play-dune/data', file, url, true, true);
