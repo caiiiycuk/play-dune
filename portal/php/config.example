@@ -1,9 +1,0 @@
-<?php 
-$db_host 		= 'play-dune.com';
-$db_user 		= 'dune2';
-$db_password 	= '';
-$db_db 			= 'dune2';
-
-$player			= isset($_COOKIE['dune-save-uuid']) ? $_COOKIE['dune-save-uuid'] : 'unknown';
-$playerName 	= $player;
-?>

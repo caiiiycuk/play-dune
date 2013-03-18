@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+  <head>
+    <% vars.commons.title %>
+    <% vars.commons.meta %>
+    <% vars.commons.css %>
+    <% vars.commons.script(arguments) %>
+
+    <link rel="stylesheet" href="<% request.uri_base %>/css/style.css?v=1.0">
+    <link rel="stylesheet" href="<% request.uri_base %>/css/pygment_trac.css?v=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  </head>
+  <body>
+
+    <div class="header">
+      <% vars.commons.advertisment %>
+      <% vars.commons.header %>
+    </div>
+
+    <div class="wrapper">
+      <section>
+        <h1>Dune II The Building of A Dynasty</h1> 
+        <% content %>
+      </section>
+    </div>
+
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+  <footer>
+    <p>Project maintained by <noindex><a href="https://github.com/caiiiycuk">Guryanov Aleksander
+  (caiiiycuk)</a></noindex></p>
+  </footer>
+
+  </body>
+</html>

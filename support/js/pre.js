@@ -1,58 +1,57 @@
-//--
-// Cookie support
-//--
-Module['UUID'] = getCookie('dune-save-uuid') || makeUUID('dune-save-uuid');
+Module['UUID'] = Engine['player-uuid'];
 
-function setCookie(c_name,value,exdays) {
-  var exdate = new Date();
-  exdate.setDate(exdate.getDate() + 365 * 32);
-  // var c_value=escape(value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
-  // document.cookie=c_name + "=" + c_value;
-  document.cookie = c_name +"=" + value + ";expires=" +  exdate.toUTCString() + ";domain=.play-dune.com;path=/";
-};
+//--
+//  DISABLE DEFAULTS
+//--
+document.body.onselectstart=function() {
+  return false
+}
 
-function getCookie(c_name) {
-  var i,x,y,ARRcookies=document.cookie.split(";");
-  for (i=0;i<ARRcookies.length;i++) {
-    x=ARRcookies[i].substr(0,ARRcookies[i].indexOf("="));
-    y=ARRcookies[i].substr(ARRcookies[i].indexOf("=")+1);
-    x=x.replace(/^\s+|\s+$/g,"");
-    if (x==c_name) {
-      return unescape(y);
-    }
+document.body.style.MozUserSelect = "none";
+
+if(navigator.userAgent.toLowerCase().indexOf("opera") != -1) {
+  document.body.onmousedown = function() {
+    return false
   }
-};
+}
 
-function makeUUID(uuidName) {
-  var S4 = function() {
-     return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
-  };
-  var uuid = (S4()+S4()+S4()+S4()+S4()+S4()+S4()+S4());
-  setCookie(uuidName, uuid, 365*20);
-  return uuid;
-};
+window.addEventListener("keydown", function(event) {
+  if(event.preventDefault) {
+    event.preventDefault();
+  }
+});
 
 //--
 //	SAVE/LOAD
 //--
 Module['preRun'] = function() { 
-    SDL.defaults.copyOnLock = false;
-    Module["FS_findObject"] = FS.findObject;
+  SDL.defaults.copyOnLock = false;
+  
+  var saves = Object.keys(Engine['saves']);
+  for (var i = 0; i < saves.length; ++i) {
+    var file = saves[i];
+    var url = Engine['saves'][file];
 
-    var saveFile = 'http://play-dune.com/save/' + Module['UUID'] + '.dat';
-	Module["FS_createPreloadedFile"]('/home/caiiiycuk/play-dune/data', 'game.dat', 
-    saveFile, true, true);
+    Module["FS_createPreloadedFile"]
+      ('/home/caiiiycuk/play-dune/data', file, url, true, true);
+  }
 }
 
-var _saveOnServer = function() {
-  file = "/home/caiiiycuk/play-dune/data/game.dat";
-  
-  var fs_object = Module["FS_findObject"](file);
+var _selectSlot = function(callback) {
+  Module['selectSlotDialog'](function(slot) {
+    FUNCTION_TABLE[callback](slot);
+  });
+}
+
+var _saveOnServer = function(ptr) {
+  var fileName = Pointer_stringify(ptr);
+  var file = "/home/caiiiycuk/play-dune/data/"+fileName;
+  var fs_object = FS.findObject(file);
   var contents = fs_object.contents;
   var array = new Uint8Array(contents);
-
+  
   var xhr = new XMLHttpRequest();
-  xhr.open("POST", "http://play-dune.com/push.php", true);
+  xhr.open("POST", "/save/" + Module['UUID'] + "/" + fileName, true);
   xhr.setRequestHeader('X-UUID', Module['UUID']);
   xhr.onload = function(e) { 
     alert('This game is saved on the server!');
@@ -134,17 +133,17 @@ var _js_music_play = function(index) {
 //--
 
 function _pushStats(g_campaignID, houseId, killed, destroyed, harvested, score) {
-  var scores = {
-    'campaign': g_campaignID,
-    'house': houseId,
-    'killed': killed,
-    'destroyed': destroyed,
-    'harvested': harvested,
-    'score': score,
-    'player': Module['UUID']
-  };
-
-  var xhr = new XMLHttpRequest();
-  xhr.open("POST", "http://play-dune.com/stats.php", true);
-  xhr.send(JSON.stringify(scores));
+// var scores = {
+//   'campaign': g_campaignID,
+//   'house': houseId,
+//   'killed': killed,
+//   'destroyed': destroyed,
+//   'harvested': harvested,
+//   'score': score,
+//   'player': Module['UUID']
+// };
+// 
+// var xhr = new XMLHttpRequest();
+// xhr.open("POST", "http://play-dune.com/stats.php", true);
+// xhr.send(JSON.stringify(scores));
 }

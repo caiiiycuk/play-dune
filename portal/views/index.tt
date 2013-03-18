@@ -1,0 +1,21 @@
+<p>
+  This is a open-source recreation of the classic strategy game Dune 2. Game is HTML5 compliant and can be run on every major browser like chrome or firefox.
+</p>
+
+<p>
+  You can play in single-player mode for all of three houses. You should be <noindex><a href="/commons/login">registred</a></noindex> to start playing. All you games will be saved on server and you can continue playing it any time.
+</p>
+
+<h2>Play</h2>
+<ul>
+  <li><h2><a href="/atreides/" class="button">Atreides</a></h2></li>
+  <li><h2><a href="/ordos/" class="button">Ordos</a></h2></li>
+  <li><h2><a href="/harkonnen/" class="button">Harkonnen</a></h2></li>
+</ul>
+
+<h3>Support</h3>
+
+<p>
+  Subscribe to <a href="http://groups.google.com/group/caiiiycuk">mailing list</a>, <a href="https://github.com/caiiiycuk/play-dune">report a bug</a> or contact <a href="mailto:caiiiycuk@gmail.com">caiiiycuk@gmail.com</a>
+</p>
+<noindex><p>Powered by <a href="https://github.com/kripken/emscripten">emscripten</a> and <a href="http://www.opendune.org/">OpenDune</a></p></noindex>

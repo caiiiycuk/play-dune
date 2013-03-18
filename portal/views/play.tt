@@ -1,0 +1,83 @@
+<div class="container">
+  <div class="canvas-container">
+    <div id="controls" class="controls"><a id="mute"></a></div>
+    <div id="status"></div>
+    <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+    <div id="slots">
+      <h2>Select save slot</h2>
+        <button id="1" class="slot">Slot 1</button>
+        <button id="2" class="slot">Slot 2</button>
+        <button id="3" class="slot">Slot 3</button>
+        <button id="4" class="slot">Slot 4</button>
+        <button id="5" class="slot">Slot 5</button>
+        <button id="6" class="slot">Slot 6</button>
+        <button id="7" class="slot">Slot 7</button>
+        <button id="8" class="slot">Slot 8</button>
+        <button id="9" class="slot">Slot 9</button>
+        
+        <button id="cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+      // connect to canvas
+      var Module = {
+        fullScreen: false,
+        print: function() {},
+        printErr: function(text) {
+          if (0) { // XXX disabled for safety typeof dump == 'function') {
+            dump(text + '\n'); // fast, straight to the real console
+          } else {
+            console.log(text);
+          }
+        },
+        canvas: document.getElementById('canvas'),
+        slots: document.getElementById('slots'),
+        setStatus: function(text) {
+          document.getElementById('status').innerHTML = text;
+          if (!text) {
+            document.getElementById("controls").style.display = 'block';
+          }
+        },
+        totalDependencies: 0,
+        monitorRunDependencies: function(left) {
+        },
+        hideSlotDialog: function() {
+          Module['canvas'].style.display = 'block';
+          Module['slots'].style.display = 'none';
+        },
+        selectSlotDialog: function(callback) {
+          Module['canvas'].style.display = 'none';
+          Module['slots'].style.display = 'block';
+
+          var clickHandler = function(event) {
+            callback(event.target.id);
+            Module['hideSlotDialog']();
+          }
+
+          document.getElementById('1').onclick = clickHandler;
+          document.getElementById('2').onclick = clickHandler;
+          document.getElementById('3').onclick = clickHandler;
+          document.getElementById('4').onclick = clickHandler;
+          document.getElementById('5').onclick = clickHandler;
+          document.getElementById('6').onclick = clickHandler;
+          document.getElementById('7').onclick = clickHandler;
+          document.getElementById('8').onclick = clickHandler;
+          document.getElementById('9').onclick = clickHandler;
+        }
+      };
+
+      document.getElementById("mute").onclick = function() {
+        Module['EM_MIDI_AUDIO'].muted = true;
+        Module['EM_MIDI_AUDIO'].play = function() {};
+        Module['EM_MIDI_AUDIO'].pause = function() {};
+        document.getElementById("mute").style.display = 'none';
+      }
+
+      document.getElementById('cancel').onclick = Module['hideSlotDialog'];
+
+      Module['arguments'] = Engine['arguments'];
+</script>
+
+<script type="text/javascript" src="/js/opendune.js"></script>

@@ -1,0 +1,85 @@
+body {
+	margin: 0;
+}
+
+.play-adsense {
+	height: 90px;
+	width: 100%;
+	padding: 0;
+	margin: 0 auto;
+	border-bottom: 1px solid #EEE;
+	background: #000;
+}
+
+.play-adsense .google {
+	width: 728px;
+	height: 90px;
+	overflow: hidden;
+	margin: 0 auto;
+}
+
+.play-adsense-close {
+	background: url('../images/close_circle.png') no-repeat center center;
+	width: 16px;
+	height: 16px;
+	position: absolute;
+	right: 25px;
+	top: 35px;
+	cursor: pointer;
+}
+
+.play-header {
+	background: #ffffff; /* Old browsers */
+	background: -moz-linear-gradient(top,  #ffffff 0%, #bca97f 100%); /* FF3.6+ */
+	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#ffffff), color-stop(100%,#bca97f)); /* Chrome,Safari4+ */
+	background: -webkit-linear-gradient(top,  #ffffff 0%,#bca97f 100%); /* Chrome10+,Safari5.1+ */
+	background: -o-linear-gradient(top,  #ffffff 0%,#bca97f 100%); /* Opera 11.10+ */
+	background: -ms-linear-gradient(top,  #ffffff 0%,#bca97f 100%); /* IE10+ */
+	background: linear-gradient(to bottom,  #ffffff 0%,#bca97f 100%); /* W3C */
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#bca97f',GradientType=0 ); /* IE6-9 */
+
+	box-shadow: 0 1px 1px #CCCCCC;
+	-o-box-shadow: 0 1px 1px #CCCCCC;
+	-webkit-box-shadow: 0 1px 1px #CCCCCC;
+	-moz-box-shadow: 0 1px 1px #CCCCCC;
+
+	overflow: hidden;
+	height: 43px;
+}
+
+.play-header .menu-item {
+	margin: 0 10px 0 10px;
+	padding-left: 25px;
+	line-height: 43px;
+}
+
+.play-header .right {
+	float: right;
+}
+
+.play-header .left {
+	float: left;
+}
+
+.play-header-home {
+	background: url('../images/home.png') no-repeat left center;
+}
+
+.play-header-player {
+	background: url('../images/user.png') no-repeat left center;
+}
+
+.play-header-save {
+	background: url('../images/save.png') no-repeat left center;
+}
+
+.play-header-game {
+	background: url('../images/game.png') no-repeat left center;
+}
+
+.play-header-ending {
+	clear: both;
+	height: 1px;
+	width: 100%;
+	background-color: #eee;
+}

@@ -659,18 +659,29 @@ void AsyncGUI_Widget_Options_ClickCondition(bool *ref) {
 }
 
 #if EMSCRIPTEN
-extern void	saveOnServer();
+extern void	saveOnServer(const char* file);
+extern void selectSlot(void*());
+#else
+void selectSlot(void f(int slot)) {
+	f(1);
+}
 #endif
 
-void _SaveGame() {
-	SaveFile("game.dat", "game");
-#if EMSCRIPTEN
-	saveOnServer();
-#endif
+void _SaveGame(int slot) {
+	if (slot) {
+		char *file = GenerateSavegameFilename(slot);
+		SaveFile(file, "game");
+		#if EMSCRIPTEN
+			saveOnServer(file);
+		#endif
+	}
 }
 
-void _LoadGame() {
-	LoadFile("game.dat");
+void _LoadGame(int slot) {
+	if (slot) {
+		char *file = GenerateSavegameFilename(slot);
+		LoadFile(file);
+	}
 }
 
 void AsyncGUI_Widget_Options_ClickLoop() {
@@ -684,12 +695,12 @@ void AsyncGUI_Widget_Options_ClickLoop() {
 
 		switch ((key & 0x7FFF) - 0x1E) {
 			case 0:
-				_LoadGame();
+				selectSlot(_LoadGame);
 				asyncGUIWidgetOptionsClick.loop = false;
 				break;
 
 			case 1:
-				_SaveGame();
+				selectSlot(_SaveGame);
 				asyncGUIWidgetOptionsClick.loop = false;
 				break;
 
