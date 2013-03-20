@@ -80,4 +80,4 @@
       Module['arguments'] = Engine['arguments'];
 </script>
 
-<script type="text/javascript" src="/js/opendune.js"></script>
+<script type="text/javascript" src="/js/opendune.js?v=1.0"></script>
