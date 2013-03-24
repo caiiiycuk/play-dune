@@ -20,7 +20,7 @@ body {
   background: #000 url("/img/dune.png") no-repeat right bottom;
 }
 
-form {
+form, .games {
   -webkit-border-radius: 5px;
 
   border-radius: 5px;
@@ -72,4 +72,21 @@ input[type="submit"] {
   border: 1px solid gray;
   padding: 5px;
   font-weight: bold;
+}
+
+
+.dune2 {
+  background: url('/commons/images/dune2.png') no-repeat left 5px;
+  min-height: 120px;
+  padding-left: 200px;
+  margin-left: 20px;
+  margin-bottom: 30px;
+}
+
+.ttd {
+  background: url('/commons/images/ttd.png') no-repeat left top;
+  min-height: 120px;
+  padding-left: 200px;
+  margin-left: 20px;
+  margin-bottom: 30px;
 }
