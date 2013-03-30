@@ -1,8 +1,8 @@
 <!doctype html>
 <html>
   <head>
-    <% vars.commons.title %>
-    <% vars.commons.meta %>
+    <% vars.commons.title(pageTitle) %>
+    <% vars.commons.meta(pageMeta) %>
     <% vars.commons.css %>
     <% vars.commons.script(arguments) %>
 

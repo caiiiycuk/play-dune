@@ -2,6 +2,9 @@ package PlayDune::Play;
 
 use Dancer ':syntax';
 
+my $pageTitle = "Dune II The Building of A Dynasty - ";
+my $pageMeta = "Here you can play in Dune II for a house ";
+
 # Routing
 
 get '/atreides' => sub {
@@ -31,7 +34,11 @@ get '/:house/' => sub {
       $houseLetter = 'h';
     }
 
-    template 'play', { arguments => "['-$houseLetter']" };
+    template 'play', { 
+      pageTitle => $pageTitle . ucfirst($house),
+      pageMeta => $pageMeta . $house,
+      arguments => "['-$houseLetter']" 
+    };
   } else {
     redirect "/commons/login/?go=/$house/";
   }
