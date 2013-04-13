@@ -4,6 +4,10 @@ use Dancer ':syntax';
 
 # Routing
 
+get '/index.php' => sub {
+  redirect "/", 301;
+};
+
 get '/**/opendune.data' => sub {
   redirect "/opendune.data", 301;
 };
