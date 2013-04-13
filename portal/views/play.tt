@@ -4,18 +4,18 @@
     <div id="status"></div>
     <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
     <div id="slots">
-      <h2>Select save slot</h2>
-        <button id="1" class="slot">Slot 1</button>
-        <button id="2" class="slot">Slot 2</button>
-        <button id="3" class="slot">Slot 3</button>
-        <button id="4" class="slot">Slot 4</button>
-        <button id="5" class="slot">Slot 5</button>
-        <button id="6" class="slot">Slot 6</button>
-        <button id="7" class="slot">Slot 7</button>
-        <button id="8" class="slot">Slot 8</button>
-        <button id="9" class="slot">Slot 9</button>
+      <h2><% vars.i18n. select_save_game %></h2>
+        <button id="1" class="slot"><% vars.i18n.game %>1</button>
+        <button id="2" class="slot"><% vars.i18n.game %>2</button>
+        <button id="3" class="slot"><% vars.i18n.game %>3</button>
+        <button id="4" class="slot"><% vars.i18n.game %>4</button>
+        <button id="5" class="slot"><% vars.i18n.game %>5</button>
+        <button id="6" class="slot"><% vars.i18n.game %>6</button>
+        <button id="7" class="slot"><% vars.i18n.game %>7</button>
+        <button id="8" class="slot"><% vars.i18n.game %>8</button>
+        <button id="9" class="slot"><% vars.i18n.game %>9</button>
         
-        <button id="cancel">Cancel</button>
+        <button id="cancel"><% vars.i18n.cancel %></button>
     </div>
   </div>
 </div>

@@ -1,0 +1,67 @@
++:
+  en:
+    title: Dune 2 The Building of A Dynasty
+    description: Here you can play Dune 2 online on every major browser.
+    keywords: dune,dune 2,browser,online,play,game
+    lang: <a href="http://play-dune.com/" lang="en">EN</a>&nbsp<a href="http://ru.play-dune.com/" lang="ru">RU</a>
+    select_save_game: Select save game slot
+    game: Game №
+    cancel: Cancel
+  ru:
+    title: Dune 2 The Building of A Dynasty
+    description: Здесь вы можете поиграть в игру Dune 2 прямо в вашем браузере.
+    keywords: dune,dune 2,браузер,онлайн,играть
+    select_save_game: Выберите игру
+    game: Игра №
+    cancel: Отменить
+
+/:
+  en:
+    game_description: <p>This is recreation of the classic strategy game Dune 2. Game is HTML5 compliant and can be run on every major browser like chrome or firefox.</p><p>You can play in single-player mode for all of three houses. All you games will be saved on server and you can continue playing it any time.</p>
+    play: Play
+    house_atreides: House Atreides
+    house_ordos: House Ordos
+    house_harkonnen: House Harkonnen
+    support: Support
+    subscribe: <a href="https://github.com/caiiiycuk/play-ttd" rel="nofollow">Report a bug</a>; feedback <a href="mailto:caiiiycuk@gmail.com">Guryanov Aleksander (caiiiycuk)</a>
+    powered: Powered by <a href="https://github.com/kripken/emscripten" rel="nofollow">emscripten</a> and <a href="http://www.opendune.org/"  rel="nofollow">OpenDune</a>
+
+  ru:
+    game_description: <p>Классическая стратегия в реальном времени Dune 2 воссоздана для игры в браузере.</p><p>В одиночном режиме вы можете играть за любой из трех домов. Все ваши игры будут сохранены на сервере, вы сможете продолжить игру в любое время.</p>
+    play: Играть
+    house_atreides: Дом Атрейдес
+    house_ordos: Дом Ордос
+    house_harkonnen: Дом Харконнен
+    support: Поддержка
+    subscribe: <a href="https://github.com/caiiiycuk/play-ttd" rel="nofollow">Отправить ошибку</a>; обратная связь <a href="mailto:caiiiycuk@gmail.com">Гурьянов Александр (caiiiycuk)</a>
+    powered: Основанно на <a href="https://github.com/kripken/emscripten" rel="nofollow">emscripten</a> и <a href="http://www.opendune.org/" rel="nofollow">OpenDune</a>
+
+/atreides/:
+  en:
+    title: Dune 2 - House Atreides
+    description: Here you can play Dune 2 for House Atreides 
+    keywords: dune,dune 2,atreides,house,browser,online,play,game
+  ru:
+    title: Dune 2 - Дом Атрейдес
+    description: Здесь вы можете поиграть в Dune 2 за Дом Атрейдес 
+    keywords: dune,dune 2,атрейдес,дом,браузер,онлайн,играть
+
+/ordos/:
+  en:
+    title: Dune 2 - House Ordos
+    description: Here you can play Dune 2 for House Ordos 
+    keywords: dune,dune 2,ordos,house,browser,online,play,game
+  ru:
+    title: Dune 2 - Дом Ордос
+    description: Здесь вы можете поиграть в Dune 2 за Дом Ордос 
+    keywords: dune,dune 2,ордос,дом,браузер,онлайн,играть
+
+/harkonnen/:
+  en:
+    title: Dune 2 - House Harkonnen
+    description: Here you can play Dune 2 for House Harkonnen 
+    keywords: dune,dune 2,harkonnen,house,browser,online,play,game
+  ru:
+    title: Dune 2 - Дом Харконнен
+    description: Здесь вы можете поиграть в Dune 2 за Дом Харконнен 
+    keywords: dune,dune 2,харконнен,дом,браузер,онлайн,играть

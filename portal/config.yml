@@ -14,14 +14,8 @@ folder: "play-dune/"
 # Google analytics
 analytics: "UA-36400197-1"
 
-# Title
-title: "Dune II The Building of A Dynasty"
-
-# Description
-description: "This is a open-source recreation of the classic strategy game Dune 2. Game is HTML5 compliant and can be run on every major browser."
-
-# Keywords
-keywords: "play-dune,play dune,dune,dune2,game,browser,online,play"
+# Yandex metrika
+metrika: 20959015
 
 # The default layout to use for your application (located in
 # views/layouts/main.tt)
