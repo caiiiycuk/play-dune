@@ -10,7 +10,7 @@
   ru:
     title: Dune 2 The Building of A Dynasty
     description: Здесь вы можете поиграть в игру Dune 2 прямо в вашем браузере.
-    keywords: dune,dune 2,браузер,онлайн,играть
+    keywords: дюна,dune,dune 2,браузер,онлайн,играть
     select_save_game: Выберите игру
     game: Игра №
     cancel: Отменить
@@ -44,7 +44,7 @@
   ru:
     title: Dune 2 - Дом Атрейдес
     description: Здесь вы можете поиграть в Dune 2 за Дом Атрейдес 
-    keywords: dune,dune 2,атрейдес,дом,браузер,онлайн,играть
+    keywords: дюна,dune,dune 2,атрейдес,дом,браузер,онлайн,играть
 
 /ordos/:
   en:
@@ -54,7 +54,7 @@
   ru:
     title: Dune 2 - Дом Ордос
     description: Здесь вы можете поиграть в Dune 2 за Дом Ордос 
-    keywords: dune,dune 2,ордос,дом,браузер,онлайн,играть
+    keywords: дюна,dune,dune 2,ордос,дом,браузер,онлайн,играть
 
 /harkonnen/:
   en:
@@ -64,4 +64,4 @@
   ru:
     title: Dune 2 - Дом Харконнен
     description: Здесь вы можете поиграть в Dune 2 за Дом Харконнен 
-    keywords: dune,dune 2,харконнен,дом,браузер,онлайн,играть
+    keywords: дюна,dune,dune 2,харконнен,дом,браузер,онлайн,играть
