@@ -1,15 +1,15 @@
 +:
   en:
-    title: Dune 2 The Building of A Dynasty
-    description: Here you can play Dune 2 online on every major browser.
+    title: Dune 2 - Online
+    description: Browser version of classic game Dune 2. Dune 2 online can be played in every major browser.
     keywords: dune,dune 2,browser,online,play,game
     lang: <a href="http://play-dune.com/" lang="en">EN</a>&nbsp<a href="http://ru.play-dune.com/" lang="ru">RU</a>
-    select_save_game: Select save game slot
+    select_save_game: Select save slot
     game: Game №
     cancel: Cancel
   ru:
-    title: Dune 2 The Building of A Dynasty
-    description: Здесь вы можете поиграть в игру Dune 2 прямо в вашем браузере.
+    title: Дюна 2 - Онлайн
+    description: Браузерная версия классической игры Дюна 2. В Дюна 2 онлайн можно играть в любом современном браузере.
     keywords: дюна,dune,dune 2,браузер,онлайн,играть
     select_save_game: Выберите игру
     game: Игра №
@@ -17,7 +17,7 @@
 
 /:
   en:
-    game_description: <p>This is recreation of the classic strategy game Dune 2. Game is HTML5 compliant and can be run on every major browser like chrome or firefox.</p><p>You can play in single-player mode for all of three houses. All you games will be saved on server and you can continue playing it any time.</p>
+    game_description: <p>This is recreation of the classic strategy game Dune 2. Game is HTML5 compliant and can be played on every major browser like chrome or firefox.</p><p>You can play in single-player mode for all of three houses. All you games will be saved on server and you can continue playing it any time.</p>
     play: Play
     house_atreides: House Atreides
     house_ordos: House Ordos
@@ -38,30 +38,30 @@
 
 /atreides/:
   en:
-    title: Dune 2 - House Atreides
+    title: House Atreides - Dune 2 - Online
     description: Here you can play Dune 2 for House Atreides 
     keywords: dune,dune 2,atreides,house,browser,online,play,game
   ru:
-    title: Dune 2 - Дом Атрейдес
+    title: Дом Атрейдес - Дюна 2 - Онлайн
     description: Здесь вы можете поиграть в Dune 2 за Дом Атрейдес 
     keywords: дюна,dune,dune 2,атрейдес,дом,браузер,онлайн,играть
 
 /ordos/:
   en:
-    title: Dune 2 - House Ordos
+    title: House Ordos - Dune 2 - Online
     description: Here you can play Dune 2 for House Ordos 
     keywords: dune,dune 2,ordos,house,browser,online,play,game
   ru:
-    title: Dune 2 - Дом Ордос
+    title: Дом Ордос - Дюна 2 - Онлайн
     description: Здесь вы можете поиграть в Dune 2 за Дом Ордос 
     keywords: дюна,dune,dune 2,ордос,дом,браузер,онлайн,играть
 
 /harkonnen/:
   en:
-    title: Dune 2 - House Harkonnen
+    title: House Harkonnen - Dune 2 - Online
     description: Here you can play Dune 2 for House Harkonnen 
     keywords: dune,dune 2,harkonnen,house,browser,online,play,game
   ru:
-    title: Dune 2 - Дом Харконнен
+    title: Дом Харконнен - Дюна 2 - Онлайн
     description: Здесь вы можете поиграть в Dune 2 за Дом Харконнен 
     keywords: дюна,dune,dune 2,харконнен,дом,браузер,онлайн,играть
