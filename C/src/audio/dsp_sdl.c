@@ -74,7 +74,7 @@ bool DSP_Init()
 
 	if (SDL_OpenAudio(&s_spec, &s_spec) != 0) return false;
 
-	return (SDL_GetAudioStatus() != 0);
+	return true;
 }
 
 /**
@@ -145,5 +145,5 @@ void DSP_Play(const uint8 *data)
 
 uint8 DSP_GetStatus()
 {
-	return (SDL_GetAudioStatus() != 0) ? s_status : 0;
+	return s_status;
 }
