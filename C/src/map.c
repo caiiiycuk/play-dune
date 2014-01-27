@@ -74,11 +74,22 @@ uint16 Map_MoveDirection(uint16 direction)
 		{ 0,  1}, {-1,  1}, {-1,  0}, {-1, -1}
 	};
 
+	return Map_Move(mapScrollOffset[direction].x, mapScrollOffset[direction].y);
+}
+
+/**
+ * Move the viewport position in the given direction.
+ *
+ * @param deltaX, deltaY Tile count to move
+ * @return The new viewport position.
+*/
+uint16 Map_Move(uint16 deltaX, uint16 deltaY)
+{
 	uint16 x, y;
 	const MapInfo *mapInfo;
 
-	x = Tile_GetPackedX(g_minimapPosition) + mapScrollOffset[direction].x;
-	y = Tile_GetPackedY(g_minimapPosition) + mapScrollOffset[direction].y;
+	x = Tile_GetPackedX(g_minimapPosition) + deltaX;
+	y = Tile_GetPackedY(g_minimapPosition) + deltaY;
 
 	mapInfo = &g_mapInfos[g_scenario.mapScale];
 

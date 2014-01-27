@@ -1,3 +1,9 @@
+//FIXME
+Engine = {
+  'player-uuid': 'uuid',
+  'saves': {}
+};
+
 Module['UUID'] = Engine['player-uuid'];
 
 //--
@@ -24,18 +30,18 @@ window.addEventListener("keydown", function(event) {
 //--
 //	SAVE/LOAD
 //--
-Module['preRun'] = function() { 
-  SDL.defaults.copyOnLock = false;
+// Module['preRun'] = function() { 
+//   SDL.defaults.copyOnLock = false;
   
-  var saves = Object.keys(Engine['saves']);
-  for (var i = 1; i < 10; ++i) {
-    var file = '_save00' + i + '.dat';
-    var url = '/save/' + Module['UUID'] + '/' + file;
+//   var saves = Object.keys(Engine['saves']);
+//   for (var i = 1; i < 10; ++i) {
+//     var file = '_save00' + i + '.dat';
+//     var url = '/save/' + Module['UUID'] + '/' + file;
 
-    Module["FS_createPreloadedFile"]
-      ('/home/caiiiycuk/play-dune/data', file, url, true, true);
-  }
-}
+//     Module["FS_createPreloadedFile"]
+//       ('/home/caiiiycuk/play-dune/data', file, url, true, true);
+//   }
+// }
 
 var _selectSlot = function(callback) {
   Module['selectSlotDialog'](function(slot) {

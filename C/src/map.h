@@ -92,6 +92,7 @@ extern uint16 g_var_3A08;
 extern LandscapeInfo g_table_landscapeInfo[LST_MAX];
 
 extern uint16 Map_MoveDirection(uint16 direction);
+extern uint16 Map_Move(uint16 deltaX, uint16 deltaY);
 extern void Map_SetSelection(uint16 packed);
 extern uint16 Map_SetSelectionSize(uint16 layout);
 extern uint16 Map_SetSelectionObjectPosition(uint16 packed);

@@ -33,11 +33,120 @@
 #include "../unit.h"
 
 static uint32 s_tickCursor;                                 /*!< Stores last time Viewport changed the cursor spriteID. */
-static uint32 s_tickMapScroll;                              /*!< Stores last time Viewport ran MapScroll function. */
+static uint32 s_tickClick;                                  /*!< Stores last time Viewport handled a click. */
 
 static uint8 s_paletteHouse[16];                            /*!< Used for palette manipulation to get housed coloured units etc. */
 static uint16 s_spriteFlags;
 
+typedef struct MapMoveState {
+	uint16 pX;
+	uint16 pY;
+	int deltaX;
+	int deltaY;
+	bool isMapMoving;
+	bool isMapActive;
+	bool isDragMode;
+} MapMoveState;
+
+static MapMoveState mapMoveState;
+
+bool ignoreEvent(Widget *w) {
+	if (w->index == 45) {
+		return true;
+	}
+
+	if (mapMoveState.isMapMoving && !mapMoveState.isMapActive) {
+		return true;
+	}
+
+	return false;
+}
+
+bool isButtonDown(Widget *w) {
+	return (w->state.s.buttonState & 0x11) != 0;
+}
+
+bool isButtonPressed(Widget *w) {
+	return (w->state.s.buttonState & 0x22) != 0;
+}
+
+bool isButtonUp(Widget *w) {
+	return (w->state.s.buttonState & 0x44) != 0;
+}
+
+void MapMoveState_UpdateMousePostion() {
+	mapMoveState.pX = g_mouseX;
+	mapMoveState.pY = g_mouseY;
+}
+
+void MapMoveState_ActivateWidget(uint16 index) {
+	mapMoveState.isMapActive = index == 43;
+}
+
+void MapMoveState_Drag() {
+	if (!mapMoveState.isMapActive) {
+		return;
+	}
+
+	if (!mapMoveState.isDragMode) {
+		mapMoveState.deltaX = 0;
+		mapMoveState.deltaY = 0;
+		mapMoveState.isDragMode = 1;
+	} else {
+		mapMoveState.deltaX += g_mouseX - mapMoveState.pX;
+		mapMoveState.deltaY += g_mouseY - mapMoveState.pY;
+	}
+}
+
+void MapMoveState_ReleaseDrag() {
+	mapMoveState.isMapMoving = 0;
+	mapMoveState.isDragMode = 0;
+}
+
+bool MapMoveState_isClickState(Widget *w) {
+	return (isButtonUp(w) && mapMoveState.isMapActive)
+		|| (isButtonDown(w) && !mapMoveState.isMapActive);
+}
+
+bool MapMoveState_isDragState(Widget *w) {
+	if (!isButtonPressed(w)) {
+		return false;
+	}
+
+	if(g_selectionType  == SELECTIONTYPE_PLACE) {
+		return false;
+	}
+
+	if (w->index == 44) {
+		return !g_disableDragInMinimap;
+	}
+
+	return true;
+}
+
+bool MapMoveState_MoveMap() {
+	if (mapMoveState.isMapActive) {
+		int moveX = mapMoveState.deltaX / 10;
+		int moveY = mapMoveState.deltaY / 10;
+
+		if (moveX != 0) {
+			mapMoveState.deltaX = 0;
+		}
+
+		if (moveY != 0) {
+			mapMoveState.deltaY = 0;
+		}
+
+		if (moveX != 0 || moveY != 0) {
+			Map_Move(-moveX, -moveY);
+			mapMoveState.isMapMoving = 1;
+		}
+
+		return true;
+	}
+
+	return false;
+}
 /**
  * Handles the Click events for the Viewport widget.
  *
@@ -45,7 +154,6 @@ static uint16 s_spriteFlags;
  */
 bool GUI_Widget_Viewport_Click(Widget *w)
 {
-	uint16 direction;
 	uint16 x, y;
 	uint16 spriteID;
 	uint16 packed;
@@ -74,38 +182,30 @@ bool GUI_Widget_Viewport_Click(Widget *w)
 		g_cursorSpriteID = spriteID;
 	}
 
-	if (w->index == 45) return true;
+	MapMoveState_ActivateWidget(w->index);
 
-	click = false;
-	drag = false;
-
-	if ((w->state.s.buttonState & 0x11) != 0) {
-		click = true;
-		g_var_37B8 = false;
-	} else if ((w->state.s.buttonState & 0x22) != 0 && !g_var_37B8) {
-		drag = true;
-	}
-
-	direction = 0xFFFF;
-	switch (w->index) {
-		default: break;
-		case 39: direction = 0; break;
-		case 40: direction = 2; break;
-		case 41: direction = 6; break;
-		case 42: direction = 4; break;
-	}
-
-	if (direction != 0xFFFF) {
-		if (!click && !drag) {
-			if (s_tickMapScroll + 10 >= g_timerGame || s_tickCursor + 20 >= g_timerGame) return true;
-			if (g_gameConfig.autoScroll == 0) return true;
-			if (g_selectionType == SELECTIONTYPE_STRUCTURE || g_selectionType == SELECTIONTYPE_UNIT) return true;
-		}
-
-		s_tickMapScroll = g_timerGame;
-
-		Map_MoveDirection(direction);
+	if (ignoreEvent(w)) {
+		MapMoveState_UpdateMousePostion();
 		return true;
+	}
+
+	click = MapMoveState_isClickState(w);
+	drag = MapMoveState_isDragState(w);
+
+	if (click) {
+		click = !mapMoveState.isMapMoving;
+		g_disableDragInMinimap = false;
+		MapMoveState_ReleaseDrag();
+	} else if (drag) {
+		MapMoveState_Drag();
+	}
+
+	MapMoveState_UpdateMousePostion();
+
+	/* ENHANCEMENT -- Dune2 depends on slow CPUs to limit the rate mouse clicks are handled. */
+	if (false && g_dune2_enhanced && (click || drag)) {
+		if (s_tickClick + 2 >= g_timerGame) return true;
+		s_tickClick = g_timerGame;
 	}
 
 	if (click) {
@@ -273,6 +373,10 @@ bool GUI_Widget_Viewport_Click(Widget *w)
 
 	if ((click || drag) && w->index == 44) {
 		Map_SetViewportPosition(packed);
+		return true;
+	}
+
+	if (drag && MapMoveState_MoveMap()) {
 		return true;
 	}
 

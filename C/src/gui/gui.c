@@ -140,7 +140,7 @@ uint16 g_cursorSpriteID;
 uint16 g_cursorDefaultSpriteID;
 
 uint16 g_variable_37B2;
-bool g_var_37B8;
+bool g_disableDragInMinimap;
 
 uint16 g_viewportMessageCounter;                            /*!< Countdown counter for displaying #g_viewportMessageText, bit 0 means 'display the text'. */
 char *g_viewportMessageText;                                /*!< If not \c NULL, message text displayed in the viewport. */
@@ -2223,7 +2223,7 @@ void GUI_ChangeSelectionType(uint16 selectionType)
 
 		g_selectionType = selectionType;
 		g_selectionTypeNew = selectionType;
-		g_var_37B8 = true;
+		g_disableDragInMinimap = true;
 
 		switch (oldSelectionType) {
 			case SELECTIONTYPE_TARGET:
