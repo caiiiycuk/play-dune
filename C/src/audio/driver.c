@@ -36,6 +36,12 @@ MSBuffer *g_bufferSound[4] = { &s_bufferSound[0], &s_bufferSound[1], &s_bufferSo
 
 static uint8 s_bufferSoundIndex;
 
+#ifdef EMSCRIPTEN
+extern bool js_driver_music_is_playing();
+extern void js_driver_music_stop();
+extern void js_driver_music_fade_out();
+#endif
+
 static void Driver_Init(uint16 driver)
 {
 	if (driver >= 16) return;
@@ -163,12 +169,16 @@ void Drivers_All_Init()
 
 bool Driver_Music_IsPlaying()
 {
+#if EMSCRIPTEN
+	return js_driver_music_is_playing();
+#else
 	MSBuffer *buffer = g_bufferMusic;
 
 	if (g_driverMusic->index == 0xFFFF) return false;
 	if (buffer->index == 0xFFFF) return false;
 
 	return MPU_IsPlaying(buffer->index) == 1;
+#endif
 }
 
 bool Driver_Voice_IsPlaying()
@@ -204,6 +214,9 @@ void Driver_Sound_Play(int16 index, int16 volume)
 
 void Driver_Music_Stop()
 {
+#if EMSCRIPTEN
+	js_driver_music_stop();
+#else
 	Driver *music = g_driverMusic;
 	MSBuffer *musicBuffer = g_bufferMusic;
 
@@ -213,6 +226,7 @@ void Driver_Music_Stop()
 	MPU_Stop(musicBuffer->index);
 	MPU_ClearData(musicBuffer->index);
 	musicBuffer->index = 0xFFFF;
+#endif
 }
 
 void Driver_Sound_Stop()
@@ -434,6 +448,9 @@ void Driver_UnloadFile(Driver *driver)
 
 void Driver_Music_FadeOut()
 {
+#if EMSCRIPTEN
+	js_driver_music_fade_out();
+#else
 	Driver *music = g_driverMusic;
 	MSBuffer *musicBuffer = g_bufferMusic;
 
@@ -441,4 +458,5 @@ void Driver_Music_FadeOut()
 	if (musicBuffer->index == 0xFFFF) return;
 
 	MPU_SetVolume(musicBuffer->index, 0, 2000);
+#endif
 }

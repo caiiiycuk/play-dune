@@ -2465,7 +2465,7 @@ static void LoopMain() {
 			g_musicInBattle = -1;
 		} else {
 			g_musicInBattle = 0;
-			if (g_enableSoundMusic != 0 && g_timerGUI > l_timerNext) {
+			if (/*g_enableSoundMusic != 0 && */g_timerGUI > l_timerNext) {
 				if (!Driver_Music_IsPlaying()) {
 					Music_Play(Tools_RandomRange(0, 8) + 8);
 					l_timerNext = g_timerGUI + 300;

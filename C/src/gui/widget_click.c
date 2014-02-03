@@ -37,6 +37,8 @@
 
 #include "../async.h"
 
+#include <epicport/api.h>
+
 char g_savegameDesc[5][51];                                 /*!< Array of savegame descriptions for the SaveLoad window. */
 static uint16 s_savegameIndexBase = 0;
 static uint16 s_savegameCountOnDisk = 0;                    /*!< Amount of savegames on disk. */
@@ -658,28 +660,18 @@ void AsyncGUI_Widget_Options_ClickCondition(bool *ref) {
 	*ref = asyncGUIWidgetOptionsClick.loop;
 }
 
-#if EMSCRIPTEN
-extern void	saveOnServer(const char* file);
-extern void selectSlot(void*());
-#else
-void selectSlot(void f(int slot)) {
-	f(1);
-}
-#endif
+void _SaveGame(char *file) {
+	char fileNameComplete[1024];
 
-void _SaveGame(int slot) {
-	if (slot) {
-		char *file = GenerateSavegameFilename(slot);
+	if (file) {
+		snprintf(fileNameComplete, sizeof(fileNameComplete), "/home/caiiiycuk/play-dune/data/%s", file);
 		SaveFile(file, "game");
-		#if EMSCRIPTEN
-			saveOnServer(file);
-		#endif
+		Epicport_PushSave(fileNameComplete);
 	}
 }
 
-void _LoadGame(int slot) {
-	if (slot) {
-		char *file = GenerateSavegameFilename(slot);
+void _LoadGame(char *file) {
+	if (file) {
 		LoadFile(file);
 	}
 }
@@ -695,13 +687,17 @@ void AsyncGUI_Widget_Options_ClickLoop() {
 
 		switch ((key & 0x7FFF) - 0x1E) {
 			case 0:
-				selectSlot(_LoadGame);
 				asyncGUIWidgetOptionsClick.loop = false;
+				if (Epicport_CanLoad()) {
+					Epicport_SelectLoadFileDialog("dat", _LoadGame);
+				}
 				break;
 
 			case 1:
-				selectSlot(_SaveGame);
 				asyncGUIWidgetOptionsClick.loop = false;
+				if (Epicport_CanSave()) {
+					Epicport_SelectSaveFileDialog("dat", _SaveGame);
+				}
 				break;
 
 			case 2:
