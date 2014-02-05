@@ -17,6 +17,17 @@ if(navigator.userAgent.toLowerCase().indexOf("opera") != -1) {
 // -- MIDI --
 // --
 
+Module['EM_MIDI_TOGGLE_SOUND'] = function() {
+  if (Module['EM_MIDI_MUTED']) {
+    Module['EM_MIDI_MUTED'] = false;
+    _js_music_play(Module['EM_MIDI_MUTED_AT'] || 0);
+  } else {
+    Module['EM_MIDI_MUTED'] = true;
+    Module['EM_MIDI_MUTED_AT'] = Module['EM_MIDI_CURRENT'];
+    _js_driver_music_stop();
+  }
+};
+
 Module['EM_MIDI_AUDIO'] = new Audio();
 
 Module['EM_MIDI_AUDIO'].addEventListener('ended', function() {
@@ -60,6 +71,10 @@ Module['EM_MIDI_FILES'] = {
 };
 
 var _js_music_play = function(index) {
+  if (_js_is_muted()) {
+    return;
+  }
+
   if (index == Module['EM_MIDI_CURRENT']) {
     return;
   }
@@ -91,6 +106,10 @@ var _js_driver_music_stop = function() {
 
 var _js_driver_music_fade_out = function() {
   setTimeout(_js_driver_music_stop, 2000);
+}
+
+var _js_is_muted = function() {
+  return Module['EM_MIDI_MUTED'];
 }
 
 //--

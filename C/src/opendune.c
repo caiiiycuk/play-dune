@@ -66,6 +66,7 @@
 
 #if EMSCRIPTEN
 #include <emscripten.h>
+extern bool js_is_muted();
 #endif
 
 #include "async.h"
@@ -2466,6 +2467,10 @@ static void LoopMain() {
 		} else {
 			g_musicInBattle = 0;
 			if (/*g_enableSoundMusic != 0 && */g_timerGUI > l_timerNext) {
+				#ifdef EMSCRIPTEN
+				g_enableSoundMusic = !js_is_muted();
+				g_enableVoices = g_enableSoundMusic;
+				#endif
 				if (!Driver_Music_IsPlaying()) {
 					Music_Play(Tools_RandomRange(0, 8) + 8);
 					l_timerNext = g_timerGUI + 300;
