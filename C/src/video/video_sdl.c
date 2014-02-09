@@ -170,9 +170,10 @@ bool Video_Init()
 	}
 
 	SDL_ShowCursor(SDL_DISABLE);
-
+	SDL_LockSurface(s_gfx_surface);
 	s_gfx_screen = (uint8 *)s_gfx_surface->pixels;
 	memset(s_gfx_screen, 0, SCREEN_WIDTH * SCREEN_HEIGHT * SCREEN_MAGNIFICATION * SCREEN_MAGNIFICATION);
+	SDL_UnlockSurface(s_gfx_surface);
 
 	s_video_initialized = true;
 
