@@ -557,8 +557,8 @@ void Video_SetPalette(void *palette, int from, int length)
 	/*SDL_SetPalette(s_gfx_surface, SDL_LOGPAL | SDL_PHYSPAL, paletteRGB, from, length);*/
 
 #if EMSCRIPTEN
-	SDL_LockSurface(s_gfx_surface);
-	SDL_UnlockSurface(s_gfx_surface);
+	// SDL_LockSurface(s_gfx_surface);
+	// SDL_UnlockSurface(s_gfx_surface);
 #endif
 
 	s_video_lock = false;
