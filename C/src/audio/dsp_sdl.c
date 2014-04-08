@@ -4,6 +4,7 @@
 
 #include <assert.h>
 #include <SDL.h>
+#include <stdlib.h>
 #include "types.h"
 
 #include "dsp.h"

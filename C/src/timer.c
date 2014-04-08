@@ -26,7 +26,6 @@ typedef struct TimerNode {
 	void (*callback)();
 } TimerNode;
 
-static struct itimerval s_timerTime;
 
 static TimerNode *s_timerNodes = NULL;
 static int s_timerNodeCount = 0;

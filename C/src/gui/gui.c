@@ -1527,7 +1527,7 @@ void async_GUI_EndStats_ShowOpen() {
 	asyncEndStatsShow.score = Update_Score(asyncEndStatsShow.score, &asyncEndStatsShow.harvestedAllied, &asyncEndStatsShow.harvestedEnemy, asyncEndStatsShow.houseID);
 
 #if EMSCRIPTEN
-	pushStats(g_campaignID, asyncEndStatsShow.houseID, asyncEndStatsShow.killedEnemy, asyncEndStatsShow.destroyedEnemy, asyncEndStatsShow.harvestedAllied, asyncEndStatsShow.score);
+//	pushStats(g_campaignID, asyncEndStatsShow.houseID, asyncEndStatsShow.killedEnemy, asyncEndStatsShow.destroyedEnemy, asyncEndStatsShow.harvestedAllied, asyncEndStatsShow.score);
 #endif
 
 	loc16 = (g_scenarioID == 1) ? 2 : 3;

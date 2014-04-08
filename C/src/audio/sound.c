@@ -20,6 +20,9 @@
 #include "../string.h"
 #include "../tile.h"
 
+#ifdef EMSCRIPTEN
+extern void js_music_play(uint16);
+#endif
 
 static void *g_variable_3E54[NUM_VOICES];
 static uint32 g_variable_3E54_size[NUM_VOICES];

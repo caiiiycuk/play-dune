@@ -96,7 +96,12 @@ var _js_music_play = function(index) {
 };
 
 var _js_driver_music_is_playing = function() {
-  return Module['EM_MIDI_CURRENT'] != 0;
+  var isStopped = 
+    Module['EM_MIDI_CURRENT'] == 0 ||
+    Module['EM_MIDI_AUDIO'].paused ||
+    (Module['EM_MIDI_AUDIO'].duration - Module['EM_MIDI_AUDIO'].currentTime) < 10;
+
+  return !isStopped;
 }
 
 var _js_driver_music_stop = function() {
