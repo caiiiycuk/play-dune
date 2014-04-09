@@ -121,5 +121,55 @@ var _js_is_muted = function() {
 //  STATS
 //--
 
-function _pushStats(g_campaignID, houseId, killed, destroyed, harvested, score) {
+var _pushStats = function(g_campaignID, houseId, killed, destroyed, harvested, score) {
+}
+
+//--
+//  TIMER API
+//--
+
+var _initJsTimers = function() {
+  if (Browser['t_timers']) {
+    return;
+  }
+
+  Browser['t_timers'] = {};
+  Browser['t_timers_id'] = 0;
+
+  Browser['jsTimerRun'] = function() {
+    var alive = [];
+    var ids = Object.keys(Browser['t_timers']);
+    
+    for (var i = 0; i < ids.length; ++i) {
+      var id = ids[i];
+      var timer = Browser['t_timers'][id];
+      
+      if (timer && (timer.nextCall <= new Date().getTime())) {
+        delete Browser['t_timers'][id];
+        timer.func();
+      } 
+    }
+  }
+
+  Browser['safeClearTimeout'] = function(id) {
+    delete Browser['t_timers'][id];
+  };
+
+  Browser['safeSetTimeout'] = function(func, timeout) {
+    var id = ++Browser['t_timers_id'];
+
+    Browser['t_timers'][id] = {
+      func: func,
+      nextCall: new Date().getTime() + timeout,
+    };
+
+    return id;
+  };
+
+  setInterval(Browser['jsTimerRun'], 10);
+}
+
+var _callJsTimers = function() {
+  _initJsTimers();
+  Browser['jsTimerRun']();
 }

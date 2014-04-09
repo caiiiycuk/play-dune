@@ -22,7 +22,10 @@ static void DSP_Callback(void *userdata, Uint8 *stream, int len)
 {
 	VARIABLE_NOT_USED(userdata);
 
-	if (s_status == 0 || s_bufferLen == 0 || s_buffer == NULL) return;
+	if (s_status == 0 || s_bufferLen == 0 || s_buffer == NULL) {
+		DSP_Stop();
+		return;
+	} 
 
 	if (len <= (int)s_bufferLen) {
 		memcpy(stream, s_buffer, len);

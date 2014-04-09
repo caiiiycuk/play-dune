@@ -69,6 +69,8 @@
 extern bool js_is_muted();
 #endif
 
+extern void callJsTimers();
+
 #include "async.h"
 
 char *window_caption = "OpenDUNE - Pre v0.8";
@@ -2399,6 +2401,7 @@ static void LoopMain() {
 	static uint32 l_timerUnitStatus = 0;
 	static int16  l_selectionState = -2;
 
+	callJsTimers();
 
 	if (Async_IsPending()) {
 		Async_Loop();

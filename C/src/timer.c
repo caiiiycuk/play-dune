@@ -35,6 +35,7 @@ static uint32 s_timerLastTime;
 
 const uint32 s_timerSpeed = 10000; /* Our timer runs at 100Hz */
 
+extern void callJsTimers();
 
 static uint32 Timer_GetTime()
 {
@@ -51,6 +52,8 @@ void Timer_InterruptRun()
 	TimerNode *node;
 	uint32 new_time, usec_delta, delta;
 	int i;
+
+	callJsTimers();
 
 	/* Lock the timer, to avoid double-calls */
 	static bool timerLock = false;
