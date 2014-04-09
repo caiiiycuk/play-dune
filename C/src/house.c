@@ -404,7 +404,7 @@ bool House_UpdateRadarState(House *h)
 
 	GUI_Mouse_Hide_Safe();
 
-	while (Driver_Voice_IsPlaying()) sleepIdle();
+	/*while (Driver_Voice_IsPlaying()) sleepIdle();*/
 
 	Voice_Play(62);
 

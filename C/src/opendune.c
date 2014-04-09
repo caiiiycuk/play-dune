@@ -1489,7 +1489,7 @@ static void Gameloop_Logos()
 
 	GUI_SetPaletteAnimated(g_palette2, 60);
 
-	while (Driver_Music_IsPlaying()) sleepIdle();
+	/*while (Driver_Music_IsPlaying()) sleepIdle();*/
 
 	while (g_timerTimeout != 0) {
 		if (Input_Keyboard_NextKey() == 0 || !s_var_37B4) {

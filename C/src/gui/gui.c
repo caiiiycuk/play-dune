@@ -1842,7 +1842,7 @@ uint8 GUI_PickHouse()
 
 		GFX_Screen_SetActive(oldScreenID);
 
-		while (Driver_Voice_IsPlaying()) sleepIdle();
+		/*while (Driver_Voice_IsPlaying()) sleepIdle();*/
 
 		if (yes_no == 0x8001) break;
 
